@@ -1,0 +1,1743 @@
+<!DOCTYPE html>
+<html lang="ko" class="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StudyAI — AI 공부 매니저</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: { sans: ['"Noto Sans KR"', 'sans-serif'] }
+      }
+    }
+  };
+</script>
+<style>
+:root {
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --surface2: #f1f5f9;
+  --border: #e2e8f0;
+  --text: #0f172a;
+  --text2: #64748b;
+  --primary: #6366f1;
+  --primary-light: #eef2ff;
+  --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
+  --shadow-lg: 0 10px 25px rgba(0,0,0,.08), 0 4px 10px rgba(0,0,0,.05);
+}
+.dark {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --surface2: #21262d;
+  --border: #30363d;
+  --text: #e6edf3;
+  --text2: #8b949e;
+  --primary-light: #1e1b4b;
+  --shadow: 0 1px 3px rgba(0,0,0,.3);
+  --shadow-lg: 0 10px 25px rgba(0,0,0,.3);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Noto Sans KR', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  transition: background .3s, color .3s;
+  overflow-x: hidden;
+}
+
+/* ── Layout ── */
+#app { display: flex; height: 100vh; overflow: hidden; }
+
+#sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  transition: transform .3s, width .3s;
+}
+
+#main-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#topbar {
+  height: 56px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+#content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 28px;
+}
+
+/* ── Sidebar ── */
+.sidebar-logo {
+  padding: 20px 16px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.logo-mark {
+  width: 32px; height: 32px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+}
+.logo-text { font-weight: 700; font-size: 16px; }
+
+.sidebar-section { padding: 12px 8px 4px; }
+.sidebar-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text2);
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  padding: 0 8px;
+  margin-bottom: 4px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text2);
+  transition: background .15s, color .15s;
+  user-select: none;
+}
+.nav-item:hover { background: var(--surface2); color: var(--text); }
+.nav-item.active { background: var(--primary-light); color: var(--primary); font-weight: 600; }
+.nav-item .icon { font-size: 16px; width: 20px; text-align: center; }
+.nav-badge {
+  margin-left: auto;
+  background: var(--primary);
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 99px;
+}
+
+.subject-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding: 12px;
+  border-top: 1px solid var(--border);
+}
+
+/* ── Topbar ── */
+.search-box {
+  flex: 1;
+  max-width: 400px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 6px 12px;
+  font-size: 14px;
+  color: var(--text2);
+  cursor: text;
+}
+.icon-btn {
+  width: 36px; height: 36px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text2);
+  font-size: 18px;
+  transition: background .15s;
+}
+.icon-btn:hover { background: var(--surface2); }
+
+/* ── Cards ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  transition: box-shadow .2s, transform .2s;
+}
+.card:hover { box-shadow: var(--shadow-lg); transform: translateY(-1px); }
+
+/* ── Upload Zone ── */
+#upload-zone {
+  border: 2px dashed var(--border);
+  border-radius: 20px;
+  padding: 48px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all .25s;
+  background: var(--surface);
+  position: relative;
+  overflow: hidden;
+}
+#upload-zone:hover, #upload-zone.drag-over {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+#upload-zone.drag-over { transform: scale(1.01); }
+#upload-zone input { display: none; }
+
+/* ── Progress / Analysis ── */
+.progress-bar {
+  height: 4px;
+  background: var(--border);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  border-radius: 99px;
+  transition: width .4s ease;
+}
+
+/* ── Importance Badges ── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.badge-high { background: #fef2f2; color: #dc2626; }
+.badge-medium { background: #fffbeb; color: #d97706; }
+.badge-low { background: #f0fdf4; color: #16a34a; }
+.dark .badge-high { background: #450a0a; color: #fca5a5; }
+.dark .badge-medium { background: #451a03; color: #fcd34d; }
+.dark .badge-low { background: #052e16; color: #86efac; }
+
+/* ── Roadmap ── */
+.roadmap-step {
+  display: flex;
+  gap: 16px;
+  position: relative;
+}
+.roadmap-step:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 19px;
+  top: 40px;
+  width: 2px;
+  height: calc(100% + 8px);
+  background: linear-gradient(to bottom, #6366f1, #c7d2fe);
+}
+.step-num {
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: white;
+  font-size: 15px;
+  font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+.step-content { flex: 1; padding-bottom: 24px; }
+
+/* ── Chat ── */
+.chat-wrap {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 112px);
+}
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.chat-bubble {
+  max-width: 75%;
+  padding: 12px 16px;
+  border-radius: 16px;
+  font-size: 14px;
+  line-height: 1.6;
+  animation: slideUp .3s ease;
+}
+.chat-bubble.user {
+  align-self: flex-end;
+  background: var(--primary);
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+.chat-bubble.ai {
+  align-self: flex-start;
+  background: var(--surface2);
+  color: var(--text);
+  border-bottom-left-radius: 4px;
+}
+.chat-input-bar {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 8px;
+}
+.chat-input {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: var(--text);
+  outline: none;
+  transition: border .2s;
+  font-family: inherit;
+}
+.chat-input:focus { border-color: var(--primary); }
+.chat-send {
+  width: 42px; height: 42px;
+  background: var(--primary);
+  border: none;
+  border-radius: 12px;
+  color: white;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .15s;
+}
+.chat-send:hover { background: #4f46e5; }
+
+/* ── Timeline ── */
+.timeline-item {
+  display: flex;
+  gap: 16px;
+  padding-bottom: 24px;
+  position: relative;
+}
+.timeline-item:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 15px;
+  top: 32px;
+  width: 2px;
+  height: calc(100% - 8px);
+  background: var(--border);
+}
+.tl-dot {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 2px solid var(--primary);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── D-Day ── */
+.dday-ring {
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  background: conic-gradient(var(--primary) 0% 70%, var(--border) 70% 100%);
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+}
+.dday-inner {
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  background: var(--surface);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+}
+
+/* ── Animations ── */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes pulse-ring {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: .6; transform: scale(1.05); }
+}
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.animate-slide-up { animation: slideUp .35s ease both; }
+.animate-fade { animation: fadeIn .3s ease; }
+.animate-spin { animation: spin .8s linear infinite; }
+
+.skeleton {
+  background: linear-gradient(90deg, var(--surface2) 25%, var(--border) 50%, var(--surface2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 6px;
+}
+
+/* Analyzing steps animation */
+.analysis-step { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--text2); opacity: 0; transition: opacity .3s; }
+.analysis-step.visible { opacity: 1; }
+.analysis-step.done { color: #16a34a; }
+.analysis-step.active { color: var(--primary); }
+.step-spinner { width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin .7s linear infinite; }
+.step-check { width: 16px; height: 16px; background: #16a34a; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 10px; }
+
+/* ── Keyword tags ── */
+.keyword-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  background: var(--primary-light);
+  color: var(--primary);
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* ── Stat card ── */
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Mobile overlay */
+#sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.5);
+  z-index: 40;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* File type colors */
+.type-pdf { color: #ef4444; }
+.type-ppt { color: #f97316; }
+.type-mp3 { color: #8b5cf6; }
+.type-mp4 { color: #ec4899; }
+.type-docx { color: #3b82f6; }
+.type-txt { color: #6b7280; }
+.type-img { color: #10b981; }
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  #sidebar { position: fixed; top: 0; left: 0; bottom: 0; z-index: 50; transform: translateX(-100%); }
+  #sidebar.open { transform: translateX(0); }
+  #sidebar-overlay { display: block; }
+  #content { padding: 16px; }
+  .grid-3 { grid-template-columns: 1fr !important; }
+  .grid-2 { grid-template-columns: 1fr !important; }
+}
+
+/* View transitions */
+.view { animation: slideUp .3s ease; }
+
+/* Btn styles */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: all .15s;
+  font-family: inherit;
+}
+.btn-primary { background: var(--primary); color: white; }
+.btn-primary:hover { background: #4f46e5; }
+.btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+.btn-secondary:hover { background: var(--border); }
+.btn-sm { padding: 5px 12px; font-size: 13px; border-radius: 8px; }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <!-- Sidebar Overlay (mobile) -->
+  <div id="sidebar-overlay" onclick="closeSidebar()" style="display:none"></div>
+
+  <!-- Sidebar -->
+  <aside id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark">✦</div>
+      <span class="logo-text">StudyAI</span>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">메뉴</div>
+      <div class="nav-item active" data-view="dashboard" onclick="navigate('dashboard',this)">
+        <span class="icon">🏠</span> 대시보드
+      </div>
+      <div class="nav-item" data-view="upload" onclick="navigate('upload',this)">
+        <span class="icon">⬆️</span> 파일 업로드
+      </div>
+      <div class="nav-item" data-view="materials" onclick="navigate('materials',this)">
+        <span class="icon">📁</span> 내 자료
+        <span class="nav-badge" id="materials-count">0</span>
+      </div>
+      <div class="nav-item" data-view="roadmap" onclick="navigate('roadmap',this)">
+        <span class="icon">🗺️</span> 공부 로드맵
+      </div>
+      <div class="nav-item" data-view="timeline" onclick="navigate('timeline',this)">
+        <span class="icon">📅</span> 타임라인
+      </div>
+      <div class="nav-item" data-view="chat" onclick="navigate('chat',this)">
+        <span class="icon">🤖</span> AI 채팅
+      </div>
+    </div>
+
+    <div class="sidebar-section" id="subjects-sidebar">
+      <div class="sidebar-label">과목</div>
+      <!-- rendered by JS -->
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">즐겨찾기</div>
+      <div id="fav-list">
+        <div style="font-size:13px;color:var(--text2);padding:6px 10px;">없음</div>
+      </div>
+    </div>
+
+    <div class="sidebar-footer">
+      <div style="font-size:12px;color:var(--text2);margin-bottom:8px;">오늘: <span id="today-date"></span></div>
+      <div class="nav-item" onclick="toggleDark()" style="font-size:13px;">
+        <span class="icon" id="dark-icon">🌙</span>
+        <span id="dark-label">다크 모드</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div id="main-wrap">
+    <!-- Topbar -->
+    <header id="topbar">
+      <button class="icon-btn" style="border:none;" onclick="toggleSidebar()" title="메뉴">☰</button>
+      <div class="search-box" onclick="focusSearch()">
+        <span>🔍</span>
+        <input id="search-input" placeholder="자료 검색..." style="background:transparent;border:none;outline:none;font-size:14px;color:var(--text);flex:1;font-family:inherit;" oninput="handleSearch(this.value)">
+      </div>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
+        <button class="btn btn-primary btn-sm" onclick="navigate('upload',null)">+ 업로드</button>
+        <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;" title="프로필">👤</div>
+      </div>
+    </header>
+
+    <!-- Content -->
+    <main id="content"></main>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ────────────────────────────────────────────
+// CONSTANTS
+// ────────────────────────────────────────────
+const SUBJECTS_META = {
+  '경영학':     { color: '#3b82f6', bg: '#eff6ff', darkBg: '#1e3a5f', emoji: '📘' },
+  '통계학':     { color: '#8b5cf6', bg: '#f5f3ff', darkBg: '#2e1065', emoji: '📊' },
+  '경제학':     { color: '#10b981', bg: '#ecfdf5', darkBg: '#052e16', emoji: '📗' },
+  '회계학':     { color: '#f59e0b', bg: '#fffbeb', darkBg: '#451a03', emoji: '📙' },
+  '프로그래밍': { color: '#ef4444', bg: '#fef2f2', darkBg: '#450a0a', emoji: '💻' },
+  '데이터 분석':{ color: '#06b6d4', bg: '#ecfeff', darkBg: '#083344', emoji: '📈' },
+  '기타':       { color: '#6b7280', bg: '#f9fafb', darkBg: '#1f2937', emoji: '📄' },
+};
+
+const FILE_ICONS = {
+  pdf: '📄', ppt: '📊', pptx: '📊', docx: '📝', doc: '📝',
+  txt: '📃', mp3: '🎧', wav: '🎙️', mp4: '🎬', jpg: '🖼️',
+  png: '🖼️', jpeg: '🖼️',
+};
+
+const IMPORTANCE_LABELS = {
+  high:   { label: '🔥 시험 중요', badge: 'badge-high' },
+  medium: { label: '⚠️ 자주 등장', badge: 'badge-medium' },
+  low:    { label: '📌 참고용',   badge: 'badge-low' },
+};
+
+// ────────────────────────────────────────────
+// MOCK DATA
+// ────────────────────────────────────────────
+const DEFAULT_MATERIALS = [
+  {
+    id: 'mat_001',
+    name: '경영전략 기말 범위 정리.pdf',
+    type: 'pdf',
+    subject: '경영학',
+    uploadDate: '2026-05-15',
+    size: '3.2MB',
+    status: 'complete',
+    pinned: true,
+    analysis: {
+      summary: '포터의 5가지 경쟁요인, BCG 매트릭스, 블루오션 전략이 핵심. SWOT 분석 실제 기업 적용 사례가 중점적으로 출제 예상.',
+      keywords: ['SWOT', 'BCG매트릭스', '블루오션', '포터5Forces', '경쟁우위', '핵심역량'],
+      importance: 'high',
+      examProb: 92,
+      chapters: [
+        { title: '경쟁전략 기초', importance: 'high', summary: '5가지 경쟁요인과 산업매력도 분석' },
+        { title: 'BCG 매트릭스', importance: 'high', summary: '사업 포트폴리오 관리 전략' },
+        { title: '블루오션 전략', importance: 'medium', summary: '경쟁없는 시장 창출 방법론' },
+        { title: 'SWOT 실습', importance: 'high', summary: '실제 기업 사례 적용 분석' },
+      ],
+    },
+  },
+  {
+    id: 'mat_002',
+    name: '통계학 4-6주차 강의.mp4',
+    type: 'mp4',
+    subject: '통계학',
+    uploadDate: '2026-05-17',
+    size: '412MB',
+    status: 'complete',
+    pinned: false,
+    analysis: {
+      summary: '가설검정(t-test, ANOVA), 회귀분석 기초, p-value 해석법이 핵심. 교수님이 3번 반복 강조한 중심극한정리 반드시 암기.',
+      keywords: ['t-test', 'ANOVA', '회귀분석', 'p-value', '중심극한정리', '표준오차'],
+      importance: 'high',
+      examProb: 88,
+      chapters: [
+        { title: '가설검정 원리', importance: 'high', summary: 'H0, H1 설정 및 기각역 계산' },
+        { title: 'T-검정 실습', importance: 'high', summary: '단일·독립·대응 표본 t-test' },
+        { title: 'ANOVA 분석', importance: 'medium', summary: '집단 간 평균 차이 분석' },
+        { title: '단순회귀분석', importance: 'high', summary: '계수 해석과 결정계수 R²' },
+      ],
+    },
+  },
+  {
+    id: 'mat_003',
+    name: '교수님 음성강의_중간이후.mp3',
+    type: 'mp3',
+    subject: '경제학',
+    uploadDate: '2026-05-18',
+    size: '87MB',
+    status: 'complete',
+    pinned: false,
+    analysis: {
+      summary: '탄력성(수요·공급) 계산, 게임이론(내쉬균형), 비교우위 무역이론이 핵심. "이건 꼭 나와요"를 6번 언급한 내용 → 독과점 가격설정.',
+      keywords: ['탄력성', '내쉬균형', '비교우위', '독과점', '소비자잉여', '외부효과'],
+      importance: 'high',
+      examProb: 85,
+      chapters: [
+        { title: '수요·공급 탄력성', importance: 'high', summary: '가격탄력성 계산 공식' },
+        { title: '게임이론', importance: 'medium', summary: '죄수의 딜레마, 내쉬균형' },
+        { title: '무역이론', importance: 'medium', summary: '비교우위와 무역의 이익' },
+        { title: '시장구조', importance: 'high', summary: '독점·과점 가격결정 전략' },
+      ],
+    },
+  },
+  {
+    id: 'mat_004',
+    name: '회계원리 PPT 9-12장.pptx',
+    type: 'pptx',
+    subject: '회계학',
+    uploadDate: '2026-05-19',
+    size: '15.8MB',
+    status: 'complete',
+    pinned: false,
+    analysis: {
+      summary: '재무제표 3종(손익계산서·재무상태표·현금흐름표) 작성, 감가상각 계산(정액법·정률법), 재고자산 평가법(FIFO·LIFO).',
+      keywords: ['재무제표', '감가상각', 'FIFO', 'LIFO', '당기순이익', '영업현금흐름'],
+      importance: 'medium',
+      examProb: 74,
+      chapters: [
+        { title: '손익계산서', importance: 'high', summary: '매출액→당기순이익 흐름' },
+        { title: '재무상태표', importance: 'high', summary: '자산=부채+자본 등식' },
+        { title: '감가상각', importance: 'medium', summary: '정액법, 정률법, 생산량법' },
+        { title: '재고자산 평가', importance: 'medium', summary: 'FIFO, LIFO, 평균법 비교' },
+      ],
+    },
+  },
+  {
+    id: 'mat_005',
+    name: '파이썬 데이터 분석 실습.docx',
+    type: 'docx',
+    subject: '데이터 분석',
+    uploadDate: '2026-05-20',
+    size: '2.1MB',
+    status: 'complete',
+    pinned: false,
+    analysis: {
+      summary: 'Pandas DataFrame 조작, Matplotlib 시각화, Scikit-learn 머신러닝(선형회귀, KNN)이 핵심. 실습 코드 직접 작성 문제 출제.',
+      keywords: ['Pandas', 'DataFrame', 'Matplotlib', 'Scikit-learn', '선형회귀', 'KNN'],
+      importance: 'medium',
+      examProb: 68,
+      chapters: [
+        { title: 'Pandas 기초', importance: 'high', summary: 'groupby, merge, pivot_table' },
+        { title: '데이터 시각화', importance: 'medium', summary: 'plot, scatter, heatmap' },
+        { title: '머신러닝 입문', importance: 'medium', summary: '훈련/검증 분리, 과적합' },
+      ],
+    },
+  },
+];
+
+const ANALYSIS_STEPS = [
+  '파일 읽는 중...',
+  '텍스트 추출 중...',
+  '핵심 개념 분석 중...',
+  '시험 중요도 계산 중...',
+  '요약 생성 중...',
+  '과목 분류 완료',
+  '분석 완료!',
+];
+
+const MOCK_CHAT = {
+  '시험': '업로드된 자료를 분석한 결과, **가장 출제 확률 높은 내용**은 다음과 같아요:\n\n🔥 경영학: SWOT분석, BCG매트릭스 (92%)\n🔥 통계학: t-test, 중심극한정리 (88%)\n🔥 경제학: 탄력성 계산, 독과점 (85%)\n\n이 순서로 공부하는 게 효율적이에요!',
+  '요약': '📋 **핵심 요약 카드**를 생성했어요.\n\n현재 자료 기준 가장 중요한 개념:\n• SWOT 분석 4가지 요소\n• p-value < 0.05 기각 원칙\n• 탄력성 = 변화율/변화율\n• 재무제표 3종 세트\n\n암기 노트로 저장할까요?',
+  '교수': '강의 음성 파일에서 교수님이 강조한 표현을 분석했어요:\n\n📌 "이건 꼭 나와요" × 6회 → 독과점 가격설정\n📌 "중요합니다" × 4회 → 중심극한정리\n📌 "시험에 반드시" × 3회 → SWOT 실습\n\n이 3가지 최우선으로 준비하세요!',
+  '오늘': '오늘 공부 추천 플랜이에요:\n\n📚 **오전 (2h)**: 경영학 BCG/SWOT\n📊 **오후 (1.5h)**: 통계학 t-test 연습\n🎯 **저녁 (1h)**: 경제학 탄력성 문제풀이\n\n총 4.5시간 → 시험까지 남은 날짜 기준 최적 분배예요!',
+};
+
+const DEFAULT_CHAT = [
+  { role: 'ai', text: '안녕하세요! 저는 StudyAI예요 🤖\n\n업로드된 자료를 기반으로 질문해보세요.\n\n예시:\n• "시험에 나올 가능성 높은 부분 알려줘"\n• "이 개념 쉽게 설명해줘"\n• "교수님 강조 표현 분석해줘"\n• "오늘 공부 플랜 짜줘"' },
+];
+
+// ────────────────────────────────────────────
+// STATE
+// ────────────────────────────────────────────
+const State = {
+  view: 'dashboard',
+  materials: [],
+  examDate: null,
+  chatMessages: [...DEFAULT_CHAT],
+  darkMode: false,
+  subjectFilter: 'all',
+  analyzingId: null,
+
+  load() {
+    const saved = localStorage.getItem('sa_data');
+    if (saved) {
+      const d = JSON.parse(saved);
+      this.materials = d.materials || DEFAULT_MATERIALS;
+      this.examDate = d.examDate || null;
+      this.darkMode = d.darkMode || false;
+      this.chatMessages = d.chatMessages || [...DEFAULT_CHAT];
+    } else {
+      this.materials = [...DEFAULT_MATERIALS];
+    }
+  },
+
+  save() {
+    localStorage.setItem('sa_data', JSON.stringify({
+      materials: this.materials,
+      examDate: this.examDate,
+      darkMode: this.darkMode,
+      chatMessages: this.chatMessages,
+    }));
+  },
+
+  getSubjects() {
+    const counts = {};
+    this.materials.forEach(m => {
+      if (m.status === 'complete') counts[m.subject] = (counts[m.subject] || 0) + 1;
+    });
+    return counts;
+  },
+};
+
+// ────────────────────────────────────────────
+// UTILS
+// ────────────────────────────────────────────
+function uid() { return 'mat_' + Math.random().toString(36).slice(2, 9); }
+function fmt(date) {
+  const d = new Date(date);
+  return `${d.getMonth()+1}월 ${d.getDate()}일`;
+}
+function getDday() {
+  if (!State.examDate) return null;
+  const diff = Math.ceil((new Date(State.examDate) - new Date()) / 86400000);
+  return diff;
+}
+function getFileExt(name) { return name.split('.').pop().toLowerCase(); }
+function getFileIcon(ext) { return FILE_ICONS[ext] || '📄'; }
+function inferSubject(name) {
+  const n = name.toLowerCase();
+  if (n.includes('경영') || n.includes('전략') || n.includes('마케팅')) return '경영학';
+  if (n.includes('통계') || n.includes('확률') || n.includes('분포')) return '통계학';
+  if (n.includes('경제') || n.includes('미시') || n.includes('거시')) return '경제학';
+  if (n.includes('회계') || n.includes('재무') || n.includes('세무')) return '회계학';
+  if (n.includes('파이썬') || n.includes('python') || n.includes('코딩') || n.includes('프로그래밍')) return '프로그래밍';
+  if (n.includes('데이터') || n.includes('분석') || n.includes('머신')) return '데이터 분석';
+  return '기타';
+}
+function subjectStyle(sub) {
+  const m = SUBJECTS_META[sub] || SUBJECTS_META['기타'];
+  const dark = document.documentElement.classList.contains('dark');
+  return `background:${dark ? m.darkBg : m.bg};color:${m.color};`;
+}
+
+function genMockAnalysis(name, ext) {
+  const subjectData = {
+    '경영학': { keywords: ['경쟁전략','SWOT','마케팅믹스','BCG','가치사슬'], examProb: 85, importance: 'high',
+      summary: '경쟁우위 확보 전략과 SWOT 분석이 핵심. 마케팅 4P 믹스와 BCG 매트릭스 적용 사례 중심.' },
+    '통계학': { keywords: ['평균','분산','표준편차','t검정','회귀분석'], examProb: 88, importance: 'high',
+      summary: '기술통계와 추론통계의 연결이 핵심. t-검정 공식과 p-value 해석 반드시 암기.' },
+    '경제학': { keywords: ['수요공급','균형가격','탄력성','외부효과','GDP'], examProb: 80, importance: 'medium',
+      summary: '시장 균형 원리와 정부 개입 효과 분석. 탄력성 계산 문제 다수 출제 예상.' },
+    '회계학': { keywords: ['분개','재무제표','손익계산서','대차대조표','감가상각'], examProb: 75, importance: 'medium',
+      summary: '복식부기와 재무제표 작성이 핵심. 감가상각 계산 방법 3가지 비교 암기.' },
+    '프로그래밍': { keywords: ['함수','클래스','리스트','반복문','조건문'], examProb: 70, importance: 'low',
+      summary: '기본 문법과 자료구조 활용 중심. 실습 문제 코드 직접 작성 준비 필요.' },
+    '데이터 분석': { keywords: ['DataFrame','시각화','전처리','모델링','정확도'], examProb: 72, importance: 'medium',
+      summary: 'Pandas/NumPy 데이터 조작과 Scikit-learn 모델 적용이 핵심.' },
+    '기타': { keywords: ['핵심개념','요약','정리','개론','이론'], examProb: 65, importance: 'low',
+      summary: '전반적인 개념 이해 중심. 세부 내용보다 큰 흐름 파악이 중요.' },
+  };
+  const sub = inferSubject(name);
+  const d = subjectData[sub] || subjectData['기타'];
+  return {
+    summary: d.summary,
+    keywords: d.keywords,
+    importance: d.importance,
+    examProb: d.examProb,
+    chapters: [
+      { title: '1장: 기초 개념', importance: 'high', summary: '핵심 용어 정의와 기본 원리' },
+      { title: '2장: 심화 내용', importance: d.importance, summary: '실제 문제 적용 및 사례 분석' },
+      { title: '3장: 종합 정리', importance: 'medium', summary: '전체 흐름 정리 및 예상 문제' },
+    ],
+  };
+}
+
+// ────────────────────────────────────────────
+// NAVIGATION
+// ────────────────────────────────────────────
+function navigate(view, el) {
+  State.view = view;
+  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+  if (el) el.classList.add('active');
+  else {
+    const target = document.querySelector(`[data-view="${view}"]`);
+    if (target) target.classList.add('active');
+  }
+  renderView();
+  closeSidebar();
+}
+
+function toggleSidebar() {
+  const sb = document.getElementById('sidebar');
+  const ov = document.getElementById('sidebar-overlay');
+  sb.classList.toggle('open');
+  ov.style.display = sb.classList.contains('open') ? 'block' : 'none';
+}
+function closeSidebar() {
+  const sb = document.getElementById('sidebar');
+  const ov = document.getElementById('sidebar-overlay');
+  sb.classList.remove('open');
+  ov.style.display = 'none';
+}
+function focusSearch() { document.getElementById('search-input').focus(); }
+
+// ────────────────────────────────────────────
+// SIDEBAR UPDATES
+// ────────────────────────────────────────────
+function updateSidebar() {
+  // materials count
+  const count = State.materials.filter(m => m.status === 'complete').length;
+  const badge = document.getElementById('materials-count');
+  if (badge) badge.textContent = count;
+
+  // subjects
+  const subDiv = document.getElementById('subjects-sidebar');
+  if (!subDiv) return;
+  const subjects = State.getSubjects();
+  if (Object.keys(subjects).length === 0) {
+    subDiv.innerHTML = '<div class="sidebar-label">과목</div><div style="font-size:13px;color:var(--text2);padding:6px 10px;">없음</div>';
+    return;
+  }
+  let html = '<div class="sidebar-label">과목</div>';
+  Object.entries(subjects).forEach(([sub, cnt]) => {
+    const m = SUBJECTS_META[sub] || SUBJECTS_META['기타'];
+    html += `<div class="nav-item" onclick="filterBySubject('${sub}')">
+      <span class="subject-dot" style="background:${m.color}"></span>
+      <span>${m.emoji} ${sub}</span>
+      <span style="margin-left:auto;font-size:12px;color:var(--text2);">${cnt}</span>
+    </div>`;
+  });
+  subDiv.innerHTML = html;
+
+  // favorites
+  const favDiv = document.getElementById('fav-list');
+  const favs = State.materials.filter(m => m.pinned && m.status === 'complete');
+  if (!favDiv) return;
+  if (favs.length === 0) {
+    favDiv.innerHTML = '<div style="font-size:13px;color:var(--text2);padding:6px 10px;">없음</div>';
+  } else {
+    favDiv.innerHTML = favs.map(m => `
+      <div class="nav-item" onclick="showMaterialDetail('${m.id}')">
+        <span>${getFileIcon(m.type)}</span>
+        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;">${m.name}</span>
+      </div>`).join('');
+  }
+}
+
+function filterBySubject(sub) {
+  State.subjectFilter = sub;
+  navigate('materials', null);
+}
+
+// ────────────────────────────────────────────
+// VIEWS
+// ────────────────────────────────────────────
+function renderView() {
+  const container = document.getElementById('content');
+  container.innerHTML = '';
+  container.className = 'view';
+  switch (State.view) {
+    case 'dashboard':  renderDashboard(container); break;
+    case 'upload':     renderUpload(container); break;
+    case 'materials':  renderMaterials(container); break;
+    case 'roadmap':    renderRoadmap(container); break;
+    case 'timeline':   renderTimeline(container); break;
+    case 'chat':       renderChat(container); break;
+    case 'detail':     renderDetail(container); break;
+  }
+  container.style.cssText += 'flex:1;overflow-y:auto;padding:28px;';
+}
+
+// ── DASHBOARD ──────────────────────────────
+function renderDashboard(el) {
+  const dday = getDday();
+  const subjects = State.getSubjects();
+  const total = State.materials.filter(m => m.status === 'complete').length;
+  const highImportance = State.materials.filter(m => m.analysis && m.analysis.importance === 'high').length;
+  const recent = State.materials.filter(m => m.status === 'complete').slice(-3).reverse();
+
+  el.innerHTML = `
+    <!-- Welcome -->
+    <div style="margin-bottom:28px;">
+      <h1 style="font-size:24px;font-weight:700;margin-bottom:4px;">안녕하세요, 공부왕 님 👋</h1>
+      <p style="color:var(--text2);font-size:14px;">AI가 ${total}개의 자료를 분석 완료했어요. 오늘도 화이팅!</p>
+    </div>
+
+    <!-- Stat Cards -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px;" class="grid-3">
+      <!-- D-Day -->
+      <div class="stat-card" style="position:relative;overflow:hidden;">
+        <div style="position:absolute;top:-20px;right:-20px;width:100px;height:100px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border-radius:50%;opacity:.08;"></div>
+        <div style="font-size:12px;font-weight:600;color:var(--text2);letter-spacing:.05em;text-transform:uppercase;margin-bottom:8px;">시험 D-Day</div>
+        ${dday !== null ? `
+          <div style="font-size:36px;font-weight:900;color:${dday <= 3 ? '#ef4444' : dday <= 7 ? '#f59e0b' : '#6366f1'};">D-${dday}</div>
+          <div style="font-size:13px;color:var(--text2);margin-top:4px;">${State.examDate} 시험</div>
+          <button class="btn btn-secondary btn-sm" style="margin-top:12px;" onclick="changeExamDate()">날짜 변경</button>
+        ` : `
+          <div style="font-size:15px;color:var(--text2);margin:12px 0;">시험일을 설정하세요</div>
+          <button class="btn btn-primary btn-sm" onclick="setExamDate()">+ 시험일 설정</button>
+        `}
+      </div>
+
+      <!-- Stats -->
+      <div class="stat-card">
+        <div style="font-size:12px;font-weight:600;color:var(--text2);letter-spacing:.05em;text-transform:uppercase;margin-bottom:12px;">자료 현황</div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:14px;color:var(--text2);">총 자료</span>
+            <span style="font-size:18px;font-weight:700;">${total}개</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:14px;color:var(--text2);">🔥 고중요도</span>
+            <span style="font-size:18px;font-weight:700;color:#ef4444;">${highImportance}개</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:14px;color:var(--text2);">과목 수</span>
+            <span style="font-size:18px;font-weight:700;">${Object.keys(subjects).length}개</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI Diagnosis -->
+      <div class="stat-card" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;color:white;">
+        <div style="font-size:12px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;margin-bottom:8px;opacity:.8;">AI 공부 진단</div>
+        <div style="font-size:22px;font-weight:700;margin-bottom:4px;">준비도 76%</div>
+        <div style="background:rgba(255,255,255,.2);border-radius:99px;height:6px;margin-bottom:8px;overflow:hidden;">
+          <div style="background:white;width:76%;height:100%;border-radius:99px;"></div>
+        </div>
+        <div style="font-size:13px;opacity:.85;">통계학 추가 공부 필요</div>
+        <button class="btn btn-sm" style="margin-top:12px;background:rgba(255,255,255,.2);color:white;border:1px solid rgba(255,255,255,.3);" onclick="navigate('roadmap',null)">로드맵 보기 →</button>
+      </div>
+    </div>
+
+    <!-- Today's Recommendation -->
+    ${dday !== null ? `
+    <div class="card" style="padding:20px;margin-bottom:24px;background:linear-gradient(135deg,var(--primary-light),var(--surface));border-color:var(--primary);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+        <span style="font-size:20px;">🎯</span>
+        <div>
+          <div style="font-weight:700;font-size:15px;">오늘 공부 추천</div>
+          <div style="font-size:13px;color:var(--text2);">시험 D-${dday} 기준 최적 플랜</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;" class="grid-3">
+        ${[
+          { time: '오전 2h', sub: '경영학', content: 'BCG/SWOT 핵심 정리', color: '#3b82f6' },
+          { time: '오후 1.5h', sub: '통계학', content: 't-test 문제 풀이', color: '#8b5cf6' },
+          { time: '저녁 1h', sub: '경제학', content: '탄력성 계산 연습', color: '#10b981' },
+        ].map(r => `
+          <div style="background:var(--surface);border-radius:12px;padding:14px;border:1px solid var(--border);">
+            <div style="font-size:12px;color:${r.color};font-weight:600;margin-bottom:4px;">${r.time}</div>
+            <div style="font-size:14px;font-weight:600;margin-bottom:2px;">${r.sub}</div>
+            <div style="font-size:13px;color:var(--text2);">${r.content}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>` : ''}
+
+    <!-- Upload Zone (mini) -->
+    <div class="card" style="padding:20px;margin-bottom:24px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div style="font-weight:700;font-size:15px;">빠른 업로드</div>
+        <button class="btn btn-primary btn-sm" onclick="navigate('upload',null)">전체 업로드 →</button>
+      </div>
+      <div id="mini-upload-zone" style="border:2px dashed var(--border);border-radius:12px;padding:24px;text-align:center;cursor:pointer;transition:all .2s;" onclick="navigate('upload',null)"
+        ondragover="event.preventDefault();this.style.borderColor='#6366f1'" ondragleave="this.style.borderColor=''" ondrop="handleDrop(event)">
+        <div style="font-size:32px;margin-bottom:8px;">📥</div>
+        <div style="font-size:14px;color:var(--text2);">파일을 드래그하거나 클릭해서 업로드</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:4px;">PDF, PPT, MP3, MP4, DOCX, 이미지 지원</div>
+      </div>
+    </div>
+
+    <!-- Recent Materials -->
+    <div style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;">
+      <div style="font-weight:700;font-size:15px;">최근 자료</div>
+      <button class="btn btn-secondary btn-sm" onclick="navigate('materials',null)">전체 보기 →</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(${Math.min(recent.length,3)},1fr);gap:16px;" class="grid-3">
+      ${recent.length === 0
+        ? '<div style="color:var(--text2);font-size:14px;padding:16px;">아직 자료가 없어요. 업로드해보세요!</div>'
+        : recent.map(m => renderMaterialCard(m)).join('')}
+    </div>
+  `;
+}
+
+function renderMaterialCard(m) {
+  const imp = IMPORTANCE_LABELS[m.analysis?.importance || 'low'];
+  const sub = SUBJECTS_META[m.subject] || SUBJECTS_META['기타'];
+  return `
+    <div class="card" style="padding:16px;cursor:pointer;" onclick="showMaterialDetail('${m.id}')">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;">
+        <span style="font-size:28px;">${getFileIcon(m.type)}</span>
+        <span class="badge ${imp.badge}" style="font-size:11px;">${imp.label}</span>
+      </div>
+      <div style="font-size:14px;font-weight:600;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${m.name}</div>
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:10px;">
+        <span style="font-size:11px;padding:2px 8px;border-radius:99px;${subjectStyle(m.subject)}">${sub.emoji} ${m.subject}</span>
+        <span style="font-size:12px;color:var(--text2);">${fmt(m.uploadDate)}</span>
+      </div>
+      ${m.analysis ? `
+        <div style="font-size:13px;color:var(--text2);line-height:1.5;margin-bottom:10px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${m.analysis.summary}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;">
+          ${m.analysis.keywords.slice(0,3).map(k => `<span class="keyword-tag">${k}</span>`).join('')}
+        </div>
+      ` : ''}
+      ${m.analysis?.examProb ? `
+        <div style="margin-top:10px;">
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">
+            <span style="color:var(--text2);">시험 출제 확률</span>
+            <span style="font-weight:600;color:var(--primary);">${m.analysis.examProb}%</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" style="width:${m.analysis.examProb}%"></div></div>
+        </div>
+      ` : ''}
+    </div>`;
+}
+
+// ── UPLOAD ─────────────────────────────────
+function renderUpload(el) {
+  el.innerHTML = `
+    <div style="max-width:720px;margin:0 auto;">
+      <h2 style="font-size:22px;font-weight:700;margin-bottom:8px;">파일 업로드</h2>
+      <p style="color:var(--text2);font-size:14px;margin-bottom:24px;">AI가 자동으로 분석하고 정리해드려요</p>
+
+      <div id="upload-zone" onclick="document.getElementById('file-input').click()"
+        ondragover="event.preventDefault();document.getElementById('upload-zone').classList.add('drag-over')"
+        ondragleave="document.getElementById('upload-zone').classList.remove('drag-over')"
+        ondrop="handleUploadDrop(event)">
+        <input type="file" id="file-input" multiple accept=".pdf,.ppt,.pptx,.docx,.doc,.txt,.mp3,.wav,.mp4,.jpg,.jpeg,.png" onchange="handleFileSelect(this.files)">
+        <div style="font-size:56px;margin-bottom:16px;transition:transform .3s;" id="upload-icon">📥</div>
+        <div style="font-size:18px;font-weight:600;margin-bottom:8px;">파일을 여기에 드래그하세요</div>
+        <div style="font-size:14px;color:var(--text2);margin-bottom:20px;">또는 클릭해서 파일 선택</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;">
+          ${['📄 PDF','📊 PPT','📝 DOCX','🎧 MP3','🎬 MP4','🖼️ 이미지'].map(t =>
+            `<span style="padding:4px 12px;background:var(--surface2);border-radius:99px;font-size:13px;color:var(--text2);">${t}</span>`
+          ).join('')}
+        </div>
+      </div>
+
+      <!-- Upload Queue -->
+      <div id="upload-queue" style="margin-top:24px;display:flex;flex-direction:column;gap:12px;"></div>
+
+      <!-- Analyzing materials -->
+      <div id="analyzing-list" style="margin-top:24px;"></div>
+    </div>
+  `;
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  const files = e.dataTransfer.files;
+  if (files.length) {
+    State.view = 'upload';
+    navigate('upload', null);
+    setTimeout(() => processFiles(files), 300);
+  }
+}
+function handleUploadDrop(e) {
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.remove('drag-over');
+  processFiles(e.dataTransfer.files);
+}
+function handleFileSelect(files) { processFiles(files); }
+
+function processFiles(files) {
+  Array.from(files).forEach(file => {
+    const ext = getFileExt(file.name);
+    const mat = {
+      id: uid(),
+      name: file.name,
+      type: ext,
+      subject: inferSubject(file.name),
+      uploadDate: new Date().toISOString().split('T')[0],
+      size: file.size > 1024*1024 ? (file.size/1024/1024).toFixed(1)+'MB' : (file.size/1024).toFixed(0)+'KB',
+      status: 'uploading',
+      pinned: false,
+      analysis: null,
+    };
+    State.materials.push(mat);
+    State.save();
+    updateSidebar();
+    renderUploadItem(mat);
+    simulateAnalysis(mat);
+  });
+}
+
+function renderUploadItem(mat) {
+  const queue = document.getElementById('upload-queue');
+  if (!queue) return;
+  const div = document.createElement('div');
+  div.id = `upload-${mat.id}`;
+  div.className = 'card';
+  div.style.padding = '16px';
+  div.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+      <span style="font-size:28px;">${getFileIcon(mat.type)}</span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${mat.name}</div>
+        <div style="font-size:12px;color:var(--text2);">${mat.size}</div>
+      </div>
+      <span id="status-${mat.id}" style="font-size:13px;color:var(--text2);">업로드 중...</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="prog-${mat.id}" style="width:0%"></div></div>
+    <div id="steps-${mat.id}" style="margin-top:12px;display:flex;flex-direction:column;gap:6px;"></div>
+  `;
+  queue.prepend(div);
+}
+
+function simulateAnalysis(mat) {
+  const progEl = () => document.getElementById(`prog-${mat.id}`);
+  const statusEl = () => document.getElementById(`status-${mat.id}`);
+  const stepsEl = () => document.getElementById(`steps-${mat.id}`);
+
+  // Phase 1: upload progress
+  let p = 0;
+  const upInterval = setInterval(() => {
+    p += Math.random() * 15 + 5;
+    if (p >= 100) {
+      p = 100;
+      clearInterval(upInterval);
+      if (progEl()) progEl().style.width = '100%';
+      if (statusEl()) statusEl().textContent = 'AI 분석 중...';
+      // Phase 2: AI analysis steps
+      setTimeout(() => runAnalysisSteps(mat), 400);
+    }
+    if (progEl()) progEl().style.width = Math.min(p, 100) + '%';
+  }, 120);
+}
+
+function runAnalysisSteps(mat) {
+  const stepsEl = document.getElementById(`steps-${mat.id}`);
+  if (!stepsEl) return;
+  ANALYSIS_STEPS.forEach((label, i) => {
+    const div = document.createElement('div');
+    div.className = 'analysis-step';
+    div.id = `step-${mat.id}-${i}`;
+    div.innerHTML = `<div class="step-spinner" id="spin-${mat.id}-${i}"></div><span>${label}</span>`;
+    stepsEl.appendChild(div);
+    setTimeout(() => {
+      div.classList.add('visible', 'active');
+      // Mark previous step done
+      if (i > 0) {
+        const prev = document.getElementById(`step-${mat.id}-${i-1}`);
+        if (prev) {
+          prev.classList.remove('active');
+          prev.classList.add('done');
+          const prevSpin = document.getElementById(`spin-${mat.id}-${i-1}`);
+          if (prevSpin) prevSpin.outerHTML = '<div class="step-check">✓</div>';
+        }
+      }
+      // Last step
+      if (i === ANALYSIS_STEPS.length - 1) {
+        setTimeout(() => {
+          div.classList.remove('active');
+          div.classList.add('done');
+          const spin = document.getElementById(`spin-${mat.id}-${i}`);
+          if (spin) spin.outerHTML = '<div class="step-check">✓</div>';
+          finishAnalysis(mat);
+        }, 500);
+      }
+    }, i * 600);
+  });
+}
+
+function finishAnalysis(mat) {
+  const idx = State.materials.findIndex(m => m.id === mat.id);
+  if (idx < 0) return;
+  State.materials[idx].status = 'complete';
+  State.materials[idx].analysis = genMockAnalysis(mat.name, mat.type);
+  State.materials[idx].subject = inferSubject(mat.name);
+  State.save();
+  updateSidebar();
+
+  // Update card UI
+  const statusEl = document.getElementById(`status-${mat.id}`);
+  if (statusEl) {
+    statusEl.innerHTML = '<span style="color:#16a34a;font-weight:600;">✓ 분석 완료</span>';
+  }
+  const card = document.getElementById(`upload-${mat.id}`);
+  if (card) {
+    card.style.borderColor = '#86efac';
+    setTimeout(() => {
+      if (card) card.style.borderColor = '';
+    }, 2000);
+  }
+
+  // Show result button
+  const stepsEl = document.getElementById(`steps-${mat.id}`);
+  if (stepsEl) {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-primary btn-sm';
+    btn.style.marginTop = '8px';
+    btn.textContent = '결과 보기 →';
+    btn.onclick = () => showMaterialDetail(mat.id);
+    stepsEl.appendChild(btn);
+  }
+}
+
+// ── MATERIALS ──────────────────────────────
+function renderMaterials(el) {
+  const filter = State.subjectFilter;
+  let mats = State.materials.filter(m => m.status === 'complete');
+  if (filter !== 'all') mats = mats.filter(m => m.subject === filter);
+  const subjects = State.getSubjects();
+
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+      <div>
+        <h2 style="font-size:22px;font-weight:700;margin-bottom:2px;">내 자료</h2>
+        <p style="color:var(--text2);font-size:14px;">${mats.length}개의 자료</p>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-sm ${filter==='all'?'btn-primary':'btn-secondary'}" onclick="State.subjectFilter='all';renderView();">전체</button>
+        ${Object.keys(subjects).map(s => `
+          <button class="btn btn-sm ${filter===s?'btn-primary':'btn-secondary'}" onclick="State.subjectFilter='${s}';renderView();">
+            ${(SUBJECTS_META[s]||SUBJECTS_META['기타']).emoji} ${s}
+          </button>`).join('')}
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;" class="grid-2">
+      ${mats.length === 0
+        ? `<div style="color:var(--text2);font-size:14px;padding:40px 0;text-align:center;grid-column:1/-1;">
+            <div style="font-size:40px;margin-bottom:12px;">📂</div>
+            아직 자료가 없어요. <button class="btn btn-primary btn-sm" style="margin-left:8px;" onclick="navigate('upload',null)">업로드하기</button>
+           </div>`
+        : mats.map(m => renderMaterialCard(m)).join('')}
+    </div>
+  `;
+}
+
+// ── DETAIL ─────────────────────────────────
+function showMaterialDetail(id) {
+  State.selectedId = id;
+  State.prevView = State.view;
+  State.view = 'detail';
+  renderView();
+}
+
+function renderDetail(el) {
+  const mat = State.materials.find(m => m.id === State.selectedId);
+  if (!mat || !mat.analysis) { navigate('materials', null); return; }
+  const imp = IMPORTANCE_LABELS[mat.analysis.importance];
+  const sub = SUBJECTS_META[mat.subject] || SUBJECTS_META['기타'];
+
+  el.innerHTML = `
+    <div style="max-width:760px;margin:0 auto;">
+      <button class="btn btn-secondary btn-sm" style="margin-bottom:20px;" onclick="navigate('${State.prevView||'materials'}',null)">← 뒤로</button>
+
+      <!-- Header -->
+      <div class="card" style="padding:24px;margin-bottom:20px;">
+        <div style="display:flex;align-items:flex-start;gap:16px;margin-bottom:16px;">
+          <span style="font-size:48px;">${getFileIcon(mat.type)}</span>
+          <div style="flex:1;">
+            <div style="font-size:18px;font-weight:700;margin-bottom:6px;">${mat.name}</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+              <span style="font-size:12px;padding:3px 10px;border-radius:99px;${subjectStyle(mat.subject)}">${sub.emoji} ${mat.subject}</span>
+              <span class="badge ${imp.badge}">${imp.label}</span>
+              <span style="font-size:13px;color:var(--text2);">${mat.size} · ${fmt(mat.uploadDate)}</span>
+            </div>
+          </div>
+          <button onclick="togglePin('${mat.id}')" style="font-size:22px;cursor:pointer;background:none;border:none;color:${mat.pinned?'#f59e0b':'var(--text2)'};" title="${mat.pinned?'즐겨찾기 해제':'즐겨찾기'}">${mat.pinned?'★':'☆'}</button>
+        </div>
+
+        <!-- Exam Prob -->
+        <div style="background:var(--surface2);border-radius:12px;padding:16px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+            <span style="font-size:14px;font-weight:600;">시험 출제 확률</span>
+            <span style="font-size:20px;font-weight:900;color:var(--primary);">${mat.analysis.examProb}%</span>
+          </div>
+          <div class="progress-bar" style="height:8px;"><div class="progress-fill" style="width:${mat.analysis.examProb}%"></div></div>
+        </div>
+      </div>
+
+      <!-- AI Summary -->
+      <div class="card" style="padding:24px;margin-bottom:20px;">
+        <div style="font-size:15px;font-weight:700;margin-bottom:12px;">🤖 AI 핵심 요약</div>
+        <p style="font-size:14px;line-height:1.7;color:var(--text);">${mat.analysis.summary}</p>
+      </div>
+
+      <!-- Keywords -->
+      <div class="card" style="padding:24px;margin-bottom:20px;">
+        <div style="font-size:15px;font-weight:700;margin-bottom:12px;">🔑 핵심 키워드</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+          ${mat.analysis.keywords.map((k,i) => `
+            <span style="padding:6px 14px;border-radius:99px;font-size:13px;font-weight:500;
+              background:${['#eff6ff','#f5f3ff','#ecfdf5','#fffbeb','#fef2f2','#ecfeff'][i%6]};
+              color:${['#3b82f6','#8b5cf6','#10b981','#f59e0b','#ef4444','#06b6d4'][i%6]};">${k}</span>`).join('')}
+        </div>
+      </div>
+
+      <!-- Chapters -->
+      <div class="card" style="padding:24px;margin-bottom:20px;">
+        <div style="font-size:15px;font-weight:700;margin-bottom:16px;">📚 챕터별 분석</div>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          ${mat.analysis.chapters.map(ch => {
+            const ci = IMPORTANCE_LABELS[ch.importance];
+            return `
+              <div style="border:1px solid var(--border);border-radius:12px;padding:14px;display:flex;align-items:flex-start;gap:12px;">
+                <div style="flex:1;">
+                  <div style="font-size:14px;font-weight:600;margin-bottom:4px;">${ch.title}</div>
+                  <div style="font-size:13px;color:var(--text2);">${ch.summary}</div>
+                </div>
+                <span class="badge ${ci.badge}" style="white-space:nowrap;flex-shrink:0;">${ci.label}</span>
+              </div>`;
+          }).join('')}
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="navigate('chat',null)">🤖 AI에게 질문하기</button>
+        <button class="btn btn-secondary" onclick="navigate('roadmap',null)">🗺️ 로드맵에서 보기</button>
+        <button class="btn btn-secondary" style="color:#ef4444;" onclick="deleteMaterial('${mat.id}')">🗑️ 삭제</button>
+      </div>
+    </div>
+  `;
+}
+
+function togglePin(id) {
+  const m = State.materials.find(m => m.id === id);
+  if (m) { m.pinned = !m.pinned; State.save(); updateSidebar(); showMaterialDetail(id); }
+}
+function deleteMaterial(id) {
+  if (!confirm('삭제하시겠어요?')) return;
+  State.materials = State.materials.filter(m => m.id !== id);
+  State.save();
+  updateSidebar();
+  navigate('materials', null);
+}
+
+// ── ROADMAP ────────────────────────────────
+function renderRoadmap(el) {
+  const mats = State.materials.filter(m => m.status === 'complete');
+  const sorted = [...mats].sort((a,b) => (b.analysis?.examProb||0) - (a.analysis?.examProb||0));
+  const dday = getDday();
+
+  const steps = [
+    { phase: '1단계', title: '개념 이해', icon: '📖', color: '#6366f1', desc: '기본 용어와 원리 파악', duration: '30%', mats: sorted.slice(0,2) },
+    { phase: '2단계', title: '핵심 암기', icon: '🧠', color: '#8b5cf6', desc: '키워드·공식·정의 외우기', duration: '25%', mats: sorted.slice(1,3) },
+    { phase: '3단계', title: '문제 풀이', icon: '✏️', color: '#06b6d4', desc: '예상 문제 반복 풀이', duration: '25%', mats: sorted.slice(0,3) },
+    { phase: '4단계', title: '시험 직전 복습', icon: '🎯', color: '#f59e0b', desc: '고중요도 자료만 빠르게 훑기', duration: '20%', mats: sorted.filter(m => m.analysis?.importance==='high') },
+  ];
+
+  el.innerHTML = `
+    <div style="max-width:720px;margin:0 auto;">
+      <div style="margin-bottom:24px;">
+        <h2 style="font-size:22px;font-weight:700;margin-bottom:4px;">🗺️ AI 공부 로드맵</h2>
+        <p style="color:var(--text2);font-size:14px;">${dday !== null ? `시험까지 D-${dday} — ` : ''}AI가 최적 공부 순서를 추천해요</p>
+      </div>
+
+      <!-- Overall Progress -->
+      <div class="card" style="padding:20px;margin-bottom:28px;">
+        <div style="font-size:14px;font-weight:600;margin-bottom:12px;">전체 진행률</div>
+        <div style="display:flex;gap:4px;margin-bottom:8px;">
+          ${steps.map((s,i) => `<div style="flex:1;height:8px;background:${i===0?s.color:'var(--border)'};border-radius:4px;"></div>`).join('')}
+        </div>
+        <div style="font-size:13px;color:var(--text2);">현재 1단계 진행 중 · 25% 완료</div>
+      </div>
+
+      <!-- Steps -->
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        ${steps.map((s, i) => `
+          <div class="roadmap-step" style="margin-bottom:${i<steps.length-1?'8px':'0'};">
+            <div class="step-num" style="background:${i===0?`linear-gradient(135deg,${s.color},${s.color}cc)`:'var(--surface2)'};color:${i===0?'white':'var(--text2)'};font-size:14px;">${i+1}</div>
+            <div class="step-content">
+              <div class="card" style="padding:18px;${i===0?'border-color:'+s.color+';':''}" >
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <span style="font-size:22px;">${s.icon}</span>
+                    <div>
+                      <span style="font-size:12px;font-weight:600;color:${s.color};">${s.phase}</span>
+                      <div style="font-size:15px;font-weight:700;">${s.title}</div>
+                    </div>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <span style="font-size:12px;color:var(--text2);">전체의 ${s.duration}</span>
+                    ${i===0?'<span style="background:#ecfdf5;color:#16a34a;font-size:12px;font-weight:600;padding:2px 10px;border-radius:99px;">진행 중</span>':''}
+                  </div>
+                </div>
+                <p style="font-size:13px;color:var(--text2);margin-bottom:12px;">${s.desc}</p>
+                ${s.mats.length > 0 ? `
+                  <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;">관련 자료</div>
+                  <div style="display:flex;flex-direction:column;gap:4px;">
+                    ${s.mats.map(m => `
+                      <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--surface2);border-radius:8px;cursor:pointer;" onclick="showMaterialDetail('${m.id}')">
+                        <span>${getFileIcon(m.type)}</span>
+                        <span style="font-size:13px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${m.name}</span>
+                        <span style="font-size:12px;color:var(--primary);font-weight:600;">${m.analysis?.examProb||0}%</span>
+                      </div>`).join('')}
+                  </div>` : ''}
+              </div>
+            </div>
+          </div>`).join('')}
+      </div>
+
+      <!-- Exam Tips -->
+      <div class="card" style="padding:20px;margin-top:24px;background:linear-gradient(135deg,#fef9c3,#fefce8);border-color:#fde047;">
+        <div style="font-size:15px;font-weight:700;margin-bottom:12px;color:#854d0e;">💡 AI 시험 전략 TIP</div>
+        <ul style="font-size:14px;color:#713f12;line-height:1.8;padding-left:16px;">
+          <li>경영학 SWOT·BCG는 반드시 손으로 직접 그려보며 외우세요</li>
+          <li>통계학 t-test 공식은 유도 과정을 이해하면 암기가 쉬워요</li>
+          <li>경제학 탄력성은 계산 문제 위주로 5문제 이상 풀어보세요</li>
+          <li>시험 전날은 새 내용 NO — 고중요도 자료만 빠르게 복습</li>
+        </ul>
+      </div>
+    </div>
+  `;
+}
+
+// ── TIMELINE ───────────────────────────────
+function renderTimeline(el) {
+  const mats = State.materials.filter(m => m.status === 'complete')
+    .sort((a,b) => new Date(a.uploadDate) - new Date(b.uploadDate));
+
+  // Group by date
+  const groups = {};
+  mats.forEach(m => {
+    const d = m.uploadDate;
+    if (!groups[d]) groups[d] = [];
+    groups[d].push(m);
+  });
+
+  el.innerHTML = `
+    <div style="max-width:720px;margin:0 auto;">
+      <div style="margin-bottom:24px;">
+        <h2 style="font-size:22px;font-weight:700;margin-bottom:4px;">📅 자료 타임라인</h2>
+        <p style="color:var(--text2);font-size:14px;">업로드 날짜 기준 전체 자료 흐름</p>
+      </div>
+      ${Object.keys(groups).length === 0
+        ? '<div style="text-align:center;padding:60px 0;color:var(--text2);">아직 자료가 없어요</div>'
+        : Object.entries(groups).map(([date, items]) => `
+          <div style="margin-bottom:32px;">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+              <div style="font-size:14px;font-weight:700;color:var(--primary);">${fmt(date)}</div>
+              <div style="flex:1;height:1px;background:var(--border);"></div>
+              <div style="font-size:12px;color:var(--text2);">${items.length}개</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              ${items.map(m => {
+                const sub = SUBJECTS_META[m.subject] || SUBJECTS_META['기타'];
+                const imp = IMPORTANCE_LABELS[m.analysis?.importance||'low'];
+                return `
+                  <div class="timeline-item">
+                    <div class="tl-dot">${getFileIcon(m.type)}</div>
+                    <div class="card" style="flex:1;padding:14px;cursor:pointer;" onclick="showMaterialDetail('${m.id}')">
+                      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+                        <div>
+                          <div style="font-size:14px;font-weight:600;margin-bottom:4px;">${m.name}</div>
+                          <div style="display:flex;gap:6px;align-items:center;">
+                            <span style="font-size:11px;padding:2px 8px;border-radius:99px;${subjectStyle(m.subject)}">${sub.emoji} ${m.subject}</span>
+                            <span style="font-size:12px;color:var(--text2);">${m.size}</span>
+                          </div>
+                        </div>
+                        <span class="badge ${imp.badge}" style="flex-shrink:0;">${imp.label}</span>
+                      </div>
+                      ${m.analysis ? `
+                        <p style="font-size:13px;color:var(--text2);margin-top:8px;line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${m.analysis.summary}</p>
+                        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;">
+                          ${m.analysis.keywords.slice(0,4).map(k=>`<span class="keyword-tag">${k}</span>`).join('')}
+                        </div>
+                      ` : ''}
+                    </div>
+                  </div>`;
+              }).join('')}
+            </div>
+          </div>`).join('')}
+    </div>
+  `;
+}
+
+// ── CHAT ───────────────────────────────────
+function renderChat(el) {
+  el.style.padding = '0';
+  el.innerHTML = `
+    <div class="chat-wrap">
+      <!-- Chat Header -->
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:center;gap:12px;">
+        <div style="width:36px;height:36px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;">🤖</div>
+        <div>
+          <div style="font-size:14px;font-weight:700;">StudyAI 챗봇</div>
+          <div style="font-size:12px;color:var(--text2);">${State.materials.filter(m=>m.status==='complete').length}개 자료 기반 응답</div>
+        </div>
+        <button class="btn btn-secondary btn-sm" style="margin-left:auto;" onclick="clearChat()">초기화</button>
+      </div>
+
+      <!-- Quick Prompts -->
+      <div style="padding:12px 16px;display:flex;gap:8px;overflow-x:auto;border-bottom:1px solid var(--border);background:var(--surface);">
+        ${[
+          '시험 중요 부분 알려줘',
+          '오늘 공부 플랜 짜줘',
+          '교수님 강조 표현 분석해줘',
+          '핵심 요약해줘',
+        ].map(q => `<button class="btn btn-secondary btn-sm" style="white-space:nowrap;flex-shrink:0;" onclick="sendQuickMsg('${q}')">${q}</button>`).join('')}
+      </div>
+
+      <!-- Messages -->
+      <div class="chat-messages" id="chat-messages">
+        ${State.chatMessages.map(m => renderChatBubble(m)).join('')}
+      </div>
+
+      <!-- Input -->
+      <div class="chat-input-bar">
+        <textarea class="chat-input" id="chat-input" rows="1" placeholder="자료에 대해 질문하세요..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat();}"></textarea>
+        <button class="chat-send" onclick="sendChat()">➤</button>
+      </div>
+    </div>
+  `;
+  scrollChatToBottom();
+}
+
+function renderChatBubble(m) {
+  return `<div class="chat-bubble ${m.role}" style="white-space:pre-line;">${m.text}</div>`;
+}
+
+function scrollChatToBottom() {
+  const msgs = document.getElementById('chat-messages');
+  if (msgs) msgs.scrollTop = msgs.scrollHeight;
+}
+
+function sendChat() {
+  const input = document.getElementById('chat-input');
+  if (!input) return;
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  State.chatMessages.push({ role: 'user', text });
+  appendChatBubble({ role: 'user', text });
+
+  // Typing indicator
+  const typingId = 'typing-' + Date.now();
+  const msgs = document.getElementById('chat-messages');
+  if (msgs) {
+    msgs.innerHTML += `<div id="${typingId}" class="chat-bubble ai" style="display:flex;gap:4px;align-items:center;">
+      <div style="width:8px;height:8px;background:var(--text2);border-radius:50%;animation:pulse-ring 1s infinite;"></div>
+      <div style="width:8px;height:8px;background:var(--text2);border-radius:50%;animation:pulse-ring 1s .2s infinite;"></div>
+      <div style="width:8px;height:8px;background:var(--text2);border-radius:50%;animation:pulse-ring 1s .4s infinite;"></div>
+    </div>`;
+    scrollChatToBottom();
+  }
+
+  setTimeout(() => {
+    const typing = document.getElementById(typingId);
+    if (typing) typing.remove();
+    const reply = getAIReply(text);
+    State.chatMessages.push({ role: 'ai', text: reply });
+    State.save();
+    appendChatBubble({ role: 'ai', text: reply });
+  }, 800 + Math.random() * 600);
+}
+
+function sendQuickMsg(text) {
+  const input = document.getElementById('chat-input');
+  if (input) { input.value = text; sendChat(); }
+  else {
+    navigate('chat', null);
+    setTimeout(() => { const inp = document.getElementById('chat-input'); if(inp){inp.value=text;sendChat();} }, 300);
+  }
+}
+
+function appendChatBubble(m) {
+  const msgs = document.getElementById('chat-messages');
+  if (!msgs) return;
+  const div = document.createElement('div');
+  div.className = `chat-bubble ${m.role}`;
+  div.style.whiteSpace = 'pre-line';
+  div.textContent = m.text;
+  msgs.appendChild(div);
+  scrollChatToBottom();
+}
+
+function getAIReply(text) {
+  const t = text.toLowerCase();
+  if (t.includes('시험') || t.includes('출제') || t.includes('중요')) return MOCK_CHAT['시험'];
+  if (t.includes('요약') || t.includes('정리') || t.includes('핵심')) return MOCK_CHAT['요약'];
+  if (t.includes('교수') || t.includes('강조') || t.includes('스타일')) return MOCK_CHAT['교수'];
+  if (t.includes('오늘') || t.includes('플랜') || t.includes('공부')) return MOCK_CHAT['오늘'];
+  if (t.includes('안녕') || t.includes('hello')) return '안녕하세요! 공부 자료에 대해 무엇이든 질문해보세요 😊\n업로드된 자료를 분석해서 최대한 도움드릴게요!';
+  return `"${text}"에 대해 분석해봤어요.\n\n현재 업로드된 ${State.materials.filter(m=>m.status==='complete').length}개 자료를 기반으로:\n\n• 가장 관련성 높은 자료: ${State.materials.find(m=>m.status==='complete')?.name || '없음'}\n• 핵심 키워드: ${State.materials.find(m=>m.analysis)?.analysis?.keywords?.slice(0,3).join(', ') || '없음'}\n\n더 구체적으로 질문해주시면 더 정확하게 도움드릴 수 있어요!`;
+}
+
+function clearChat() {
+  State.chatMessages = [...DEFAULT_CHAT];
+  State.save();
+  const msgs = document.getElementById('chat-messages');
+  if (msgs) msgs.innerHTML = DEFAULT_CHAT.map(m => renderChatBubble(m)).join('');
+}
+
+// ────────────────────────────────────────────
+// SEARCH
+// ────────────────────────────────────────────
+function handleSearch(query) {
+  if (!query) return;
+  const q = query.toLowerCase();
+  const results = State.materials.filter(m =>
+    m.status === 'complete' && (
+      m.name.toLowerCase().includes(q) ||
+      m.subject.toLowerCase().includes(q) ||
+      m.analysis?.summary.toLowerCase().includes(q) ||
+      m.analysis?.keywords.some(k => k.toLowerCase().includes(q))
+    )
+  );
+  if (State.view !== 'materials') {
+    State.subjectFilter = 'all';
+    navigate('materials', null);
+  }
+}
+
+// ────────────────────────────────────────────
+// EXAM DATE
+// ────────────────────────────────────────────
+function setExamDate() {
+  const date = prompt('시험 날짜를 입력하세요 (예: 2026-06-20)');
+  if (date && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    State.examDate = date;
+    State.save();
+    renderView();
+  } else if (date) {
+    alert('날짜 형식이 올바르지 않아요. YYYY-MM-DD 형식으로 입력해주세요.');
+  }
+}
+function changeExamDate() { setExamDate(); }
+
+// ────────────────────────────────────────────
+// DARK MODE
+// ────────────────────────────────────────────
+function toggleDark() {
+  State.darkMode = !State.darkMode;
+  document.documentElement.classList.toggle('dark', State.darkMode);
+  const icon = document.getElementById('dark-icon');
+  const label = document.getElementById('dark-label');
+  if (icon) icon.textContent = State.darkMode ? '☀️' : '🌙';
+  if (label) label.textContent = State.darkMode ? '라이트 모드' : '다크 모드';
+  State.save();
+}
+
+// ────────────────────────────────────────────
+// INIT
+// ────────────────────────────────────────────
+function init() {
+  State.load();
+
+  // Dark mode
+  document.documentElement.classList.toggle('dark', State.darkMode);
+  const icon = document.getElementById('dark-icon');
+  const label = document.getElementById('dark-label');
+  if (icon) icon.textContent = State.darkMode ? '☀️' : '🌙';
+  if (label) label.textContent = State.darkMode ? '라이트 모드' : '다크 모드';
+
+  // Today date
+  const today = document.getElementById('today-date');
+  if (today) {
+    const d = new Date();
+    today.textContent = `${d.getMonth()+1}/${d.getDate()}`;
+  }
+
+  // Render
+  updateSidebar();
+  renderView();
+
+  // Drag & drop on whole window
+  document.addEventListener('dragover', e => e.preventDefault());
+  document.addEventListener('drop', e => {
+    e.preventDefault();
+    if (e.dataTransfer.files.length) handleDrop(e);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

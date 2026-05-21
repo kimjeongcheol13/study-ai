@@ -452,6 +452,91 @@ body {
   z-index: 40;
 }
 
+/* ── Exam Eve Mode ── */
+#exam-eve-overlay {
+  position: fixed; inset: 0;
+  background: #09090f;
+  z-index: 300;
+  overflow-y: auto;
+}
+.eve-section-label {
+  color: rgba(255,255,255,.35);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+.eve-card {
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 14px;
+  padding: 18px;
+  transition: background .2s, border-color .2s;
+}
+.eve-card:hover { background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.14); }
+
+/* ── Probability bars (animated) ── */
+@keyframes fillIn { from { width: 0; } }
+.prob-bar-fill { animation: fillIn .9s cubic-bezier(.4,0,.2,1) forwards; }
+
+/* ── Streak ── */
+.streak-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: linear-gradient(135deg, #f97316, #ef4444);
+  color: white; font-size: 12px; font-weight: 700;
+  padding: 4px 10px; border-radius: 99px;
+}
+
+/* ── Exam Eve CTA button ── */
+.eve-cta {
+  background: linear-gradient(135deg, #dc2626, #ef4444);
+  color: white; font-weight: 700; font-size: 14px;
+  padding: 13px 24px; border-radius: 13px; border: none;
+  cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
+  transition: all .2s; font-family: inherit;
+  box-shadow: 0 4px 20px rgba(239,68,68,.35);
+}
+.eve-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(239,68,68,.45); }
+
+/* ── AI chip ── */
+.ai-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: var(--primary-light); color: var(--primary);
+  font-size: 11px; font-weight: 700; padding: 3px 10px;
+  border-radius: 99px; letter-spacing: .03em;
+}
+
+/* ── Today focus card ── */
+.focus-gradient {
+  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+  border: 1px solid rgba(129,140,248,.25);
+  border-radius: 16px; padding: 20px; position: relative; overflow: hidden;
+}
+.focus-gradient::before {
+  content: ''; position: absolute; top: -40px; right: -40px;
+  width: 160px; height: 160px;
+  background: radial-gradient(circle, rgba(129,140,248,.15) 0%, transparent 70%);
+}
+
+/* ── Danger concept card ── */
+.danger-card {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px; border-radius: 12px;
+  background: rgba(239,68,68,.06); border: 1px solid rgba(239,68,68,.15);
+  transition: background .2s;
+}
+.danger-card:hover { background: rgba(239,68,68,.1); }
+
+/* ── Formula display ── */
+.formula-block {
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 15px; font-weight: 600;
+  background: var(--surface2); color: var(--primary);
+  padding: 10px 14px; border-radius: 8px;
+  border: 1px solid var(--border); letter-spacing: -.01em;
+}
+
 /* ── Settings Modal ── */
 .modal-overlay {
   position: fixed; inset: 0;
@@ -641,7 +726,10 @@ body {
     </div>
 
     <div class="sidebar-footer">
-      <div style="font-size:12px;color:var(--text2);margin-bottom:8px;">오늘: <span id="today-date"></span></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div style="font-size:12px;color:var(--text2);">오늘: <span id="today-date"></span></div>
+        <span id="streak-badge" class="streak-badge" style="display:none;">🔥 <span id="streak-count">0</span>일</span>
+      </div>
       <div class="nav-item" onclick="toggleDark()" style="font-size:13px;">
         <span class="icon" id="dark-icon">🌙</span>
         <span id="dark-label">다크 모드</span>
@@ -672,6 +760,24 @@ body {
     <!-- Content -->
     <main id="content"></main>
   </div>
+</div>
+
+<!-- Exam Eve Mode Overlay -->
+<div id="exam-eve-overlay" style="display:none;">
+  <!-- Sticky header -->
+  <div style="position:sticky;top:0;background:#09090f;border-bottom:1px solid rgba(255,255,255,.07);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;z-index:10;">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div style="width:8px;height:8px;border-radius:50%;background:#ef4444;animation:pulse-ring .9s infinite;flex-shrink:0;"></div>
+      <span style="color:white;font-size:15px;font-weight:700;letter-spacing:-.02em;">⚡ 시험 직전 모드</span>
+      <span id="eve-dday-badge" style="display:none;background:rgba(239,68,68,.15);color:#f87171;font-size:12px;font-weight:700;padding:3px 10px;border-radius:99px;"></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span id="eve-mat-count" style="color:rgba(255,255,255,.3);font-size:13px;"></span>
+      <button onclick="exitExamEve()" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.7);padding:6px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-family:inherit;transition:background .2s;" onmouseover="this.style.background='rgba(255,255,255,.15)'" onmouseout="this.style.background='rgba(255,255,255,.08)'">종료 ✕</button>
+    </div>
+  </div>
+  <!-- Content injected by JS -->
+  <div id="eve-content" style="max-width:820px;margin:0 auto;padding:36px 24px;"></div>
 </div>
 
 <!-- Settings Modal -->
@@ -848,13 +954,16 @@ const DEFAULT_MATERIALS = [
 ];
 
 const ANALYSIS_STEPS = [
-  '파일 읽는 중...',
-  '텍스트 추출 중...',
-  '핵심 개념 분석 중...',
-  '시험 중요도 계산 중...',
-  '요약 생성 중...',
-  '과목 분류 완료',
-  '분석 완료!',
+  '파일 구조 분석 중...',
+  '텍스트 / 슬라이드 레이어 추출 중...',
+  '핵심 개념 탐지 중...',
+  '반복 키워드 패턴 분석 중...',
+  '교수 강조 표현 추출 중...',
+  '시험 출제 확률 계산 중...',
+  '난이도 및 선수지식 매핑 중...',
+  '개념 연결망 구성 중...',
+  '공부 우선순위 최적화 중...',
+  '✨ AI 학습 브리핑 생성 완료!',
 ];
 
 const MOCK_CHAT = {
@@ -953,20 +1062,166 @@ function subjectStyle(sub) {
 
 function genMockAnalysis(name, ext) {
   const subjectData = {
-    '경영학': { keywords: ['경쟁전략','SWOT','마케팅믹스','BCG','가치사슬'], examProb: 85, importance: 'high',
-      summary: '경쟁우위 확보 전략과 SWOT 분석이 핵심. 마케팅 4P 믹스와 BCG 매트릭스 적용 사례 중심.' },
-    '통계학': { keywords: ['평균','분산','표준편차','t검정','회귀분석'], examProb: 88, importance: 'high',
-      summary: '기술통계와 추론통계의 연결이 핵심. t-검정 공식과 p-value 해석 반드시 암기.' },
-    '경제학': { keywords: ['수요공급','균형가격','탄력성','외부효과','GDP'], examProb: 80, importance: 'medium',
-      summary: '시장 균형 원리와 정부 개입 효과 분석. 탄력성 계산 문제 다수 출제 예상.' },
-    '회계학': { keywords: ['분개','재무제표','손익계산서','대차대조표','감가상각'], examProb: 75, importance: 'medium',
-      summary: '복식부기와 재무제표 작성이 핵심. 감가상각 계산 방법 3가지 비교 암기.' },
-    '프로그래밍': { keywords: ['함수','클래스','리스트','반복문','조건문'], examProb: 70, importance: 'low',
-      summary: '기본 문법과 자료구조 활용 중심. 실습 문제 코드 직접 작성 준비 필요.' },
-    '데이터 분석': { keywords: ['DataFrame','시각화','전처리','모델링','정확도'], examProb: 72, importance: 'medium',
-      summary: 'Pandas/NumPy 데이터 조작과 Scikit-learn 모델 적용이 핵심.' },
-    '기타': { keywords: ['핵심개념','요약','정리','개론','이론'], examProb: 65, importance: 'low',
-      summary: '전반적인 개념 이해 중심. 세부 내용보다 큰 흐름 파악이 중요.' },
+    '경영학': {
+      keywords: ['경쟁전략','SWOT','마케팅믹스','BCG매트릭스','가치사슬','핵심역량','블루오션','포터5Forces'],
+      examProb: 85, importance: 'high',
+      summary: '경쟁우위 확보 전략과 SWOT 분석이 핵심. 마케팅 4P 믹스와 BCG 매트릭스 적용 사례 중심. 포터의 5가지 경쟁요인과 블루오션 전략 비교 필수.',
+      professorStyle: '사례 분석형 + SWOT 실제 기업 적용 문제 위주 출제. "실제로 적용해보시오" 유형 빈출.',
+      dangerConcepts: ['핵심역량 vs 경쟁우위 혼동', 'BCG 사분면별 전략 혼동', 'SWOT → SO/ST/WO/WT 전략 연결 누락'],
+      expectedQuestions: [
+        '포터의 5가지 경쟁요인을 설명하고 특정 산업(예: 스마트폰)에 적용하시오.',
+        'BCG 매트릭스의 4가지 상한을 설명하고 각 사업부에 적합한 전략을 논하시오.',
+        'A 기업의 SWOT 분석을 실시하고 SO, ST, WO, WT 전략을 각각 1개씩 제시하시오.',
+      ],
+      formulaCards: [
+        { title: '상대적 시장점유율 (BCG)', formula: '자사 시장점유율 ÷ 최대 경쟁사 시장점유율', note: '절대 점유율이 아닌 상대값 사용' },
+        { title: '시장 성장률', formula: '(당기 시장규모 - 전기) ÷ 전기 × 100%', note: '10% 이상 = 고성장 시장 기준' },
+      ],
+      top10: [
+        { concept: 'SWOT 분석 + 4가지 전략 도출', prob: 95, note: 'SO·ST·WO·WT 각각 명확히' },
+        { concept: 'BCG 매트릭스 4사분면', prob: 92, note: '별·물음표·현금젖소·개 + 전략' },
+        { concept: '포터 5Forces 모델', prob: 88, note: '진입장벽 구성요소 중점' },
+        { concept: '블루오션 전략 ERRC', prob: 82, note: '제거·감소·증가·창조' },
+        { concept: '핵심역량 3가지 조건', prob: 78, note: '고객가치·차별화·확장성' },
+      ],
+    },
+    '통계학': {
+      keywords: ['평균','분산','표준편차','t검정','ANOVA','회귀분석','p-value','중심극한정리','신뢰구간','상관계수'],
+      examProb: 88, importance: 'high',
+      summary: '기술통계와 추론통계의 연결이 핵심. t-검정 공식과 p-value 해석 반드시 암기. 회귀분석 계수 해석과 결정계수 R² 의미 이해 필수.',
+      professorStyle: '계산형 문제 + 결과 해석 병행 출제. "p-value를 해석하시오" 유형 매우 빈출. SPSS 출력 결과 해석 문제 주의.',
+      dangerConcepts: ['1종 오류 vs 2종 오류 혼동', 'p-value 의미 오해 (효과 크기 아님)', '독립표본 vs 대응표본 t-test 혼동'],
+      expectedQuestions: [
+        '귀무가설과 대립가설을 설정하고 t-검정 결과(p=0.023)를 유의수준 5%에서 해석하시오.',
+        '단순회귀분석에서 기울기 계수(β=2.3)의 의미를 해석하고 R²=0.78의 의미를 설명하시오.',
+        '독립표본 t-test와 대응표본 t-test의 차이를 예시와 함께 설명하시오.',
+      ],
+      formulaCards: [
+        { title: 'T-검정 통계량', formula: 't = (X̄ - μ₀) / (s / √n)', note: 'n이 30 이상이면 정규분포 근사 가능' },
+        { title: '결정계수 R²', formula: 'R² = SSR / SST = 1 - SSE/SST', note: '0~1 사이, 1에 가까울수록 모델 설명력 높음' },
+        { title: '표준오차', formula: 'SE = σ / √n', note: '표본 크기 커질수록 표준오차 감소' },
+      ],
+      top10: [
+        { concept: 'p-value 해석 (기각 판단)', prob: 94, note: 'p < α(0.05) → 귀무가설 기각' },
+        { concept: '중심극한정리', prob: 91, note: 'n≥30이면 표본평균 정규분포' },
+        { concept: 'T-검정 3종 구분', prob: 88, note: '단일·독립·대응표본 차이' },
+        { concept: '회귀계수 해석', prob: 85, note: 'β의 의미: X 1단위 증가 시 Y 변화량' },
+        { concept: 'ANOVA F-검정', prob: 80, note: '3집단 이상 평균 비교 시 사용' },
+      ],
+    },
+    '경제학': {
+      keywords: ['수요공급','균형가격','탄력성','외부효과','GDP','독과점','게임이론','내쉬균형','비교우위','소비자잉여'],
+      examProb: 80, importance: 'medium',
+      summary: '시장 균형 원리와 정부 개입 효과 분석. 탄력성 계산 문제 다수 출제 예상. 게임이론(내쉬균형)과 독과점 가격 전략 비교 필수.',
+      professorStyle: '계산형 탄력성 문제 + 그래프 해석 위주. "소비자잉여/생산자잉여 변화"를 그래프로 표현하는 문제 빈출.',
+      dangerConcepts: ['탄력성 공식 분자분모 혼동', '소비자잉여 vs 생산자잉여 면적 착각', '비교우위 vs 절대우위 혼동'],
+      expectedQuestions: [
+        '수요의 가격탄력성이 0.5일 때 가격 10% 인상 시 총수입 변화를 계산하고 의미를 설명하시오.',
+        '완전경쟁시장과 독점시장의 균형 가격 및 수량을 비교하고 후생손실을 그래프로 나타내시오.',
+        '죄수의 딜레마를 설명하고 내쉬균형이 파레토 최적이 아닌 이유를 논하시오.',
+      ],
+      formulaCards: [
+        { title: '수요의 가격탄력성', formula: 'εd = (ΔQ/Q) ÷ (ΔP/P)', note: '|εd|>1: 탄력적, <1: 비탄력적' },
+        { title: '소비자잉여', formula: 'CS = 최대지불의사 - 실제가격 (면적)', note: '수요곡선 아래, 가격선 위의 삼각형' },
+        { title: '비교우위 판단', formula: '기회비용 비교: OC_A < OC_B → A재 생산 특화', note: '절대우위가 아닌 상대적 기회비용' },
+      ],
+      top10: [
+        { concept: '탄력성 계산 + 총수입 변화', prob: 92, note: '탄력적: 가격↑→TR↓' },
+        { concept: '소비자/생산자 잉여 면적', prob: 88, note: '그래프로 그리는 연습 필수' },
+        { concept: '독점 vs 완전경쟁 비교', prob: 85, note: '후생손실(deadweight loss) 핵심' },
+        { concept: '내쉬균형 찾기', prob: 80, note: '보수행렬에서 최적 대응 교점' },
+        { concept: '비교우위 무역 이익', prob: 75, note: '기회비용 계산 → 특화 → 교역' },
+      ],
+    },
+    '회계학': {
+      keywords: ['분개','재무제표','손익계산서','재무상태표','현금흐름표','감가상각','FIFO','LIFO','당기순이익','자본'],
+      examProb: 75, importance: 'medium',
+      summary: '복식부기와 재무제표 작성이 핵심. 감가상각 계산 방법 3가지(정액·정률·생산량법) 비교 암기. 재고자산 평가법(FIFO/LIFO) 결과 차이 이해.',
+      professorStyle: '분개 + 재무제표 작성 실기형 위주. "다음 거래를 분개하시오" + "재무제표에 미치는 영향" 병행 출제.',
+      dangerConcepts: ['차변/대변 위치 혼동', '현금주의 vs 발생주의 차이 혼동', 'FIFO vs LIFO 물가상승기 영향 혼동'],
+      expectedQuestions: [
+        '다음 거래를 분개하시오: 상품 100만원을 외상으로 매입하고, 이후 70만원을 현금으로 지급하였다.',
+        '정액법과 정률법을 비교하고 취득가액 1,000만원, 내용연수 5년, 잔존가치 0원 조건에서 각각 2년차 감가상각비를 계산하시오.',
+        '물가상승기에 FIFO와 LIFO 방법이 당기순이익과 재고자산 가액에 미치는 영향을 비교하시오.',
+      ],
+      formulaCards: [
+        { title: '정액법 감가상각', formula: '(취득원가 - 잔존가치) ÷ 내용연수', note: '매년 동일한 금액 감가상각' },
+        { title: '정률법 감가상각', formula: '기초장부가액 × 상각률', note: '초기에 많이, 후기에 적게 상각' },
+        { title: '회계 등식', formula: '자산 = 부채 + 자본', note: '항상 성립 — 분개의 기초 원리' },
+      ],
+      top10: [
+        { concept: '분개 차변·대변 원칙', prob: 90, note: '자산증가=차변, 부채증가=대변' },
+        { concept: '감가상각 3가지 방법 계산', prob: 88, note: '정액·정률·생산량법 비교' },
+        { concept: '재무제표 3종 관계', prob: 85, note: '손익계산서→재무상태표 연결' },
+        { concept: 'FIFO vs LIFO 물가 영향', prob: 78, note: '물가상승기: FIFO>이익, LIFO<이익' },
+        { concept: '현금흐름표 3가지 활동', prob: 72, note: '영업·투자·재무 활동 구분' },
+      ],
+    },
+    '프로그래밍': {
+      keywords: ['함수','클래스','리스트','반복문','조건문','재귀','시간복잡도','OOP','상속','다형성'],
+      examProb: 70, importance: 'low',
+      summary: '기본 문법과 자료구조 활용 중심. 실습 문제 코드 직접 작성 준비 필요. OOP 4대 원칙(캡슐화·상속·다형성·추상화) 이해 필수.',
+      professorStyle: '코드 작성 + 실행 결과 예측 혼합 출제. "다음 코드의 출력을 쓰시오" + "함수를 작성하시오" 병행.',
+      dangerConcepts: ['인덱스 0 시작 망각', '참조형 vs 값형 변수 혼동', '재귀 탈출 조건 누락'],
+      expectedQuestions: [
+        '팩토리얼을 재귀 함수로 구현하시오. (n=0일 때 1 반환)',
+        '다음 클래스를 상속받아 오버라이딩 메서드를 구현하시오: Animal → Dog',
+        '리스트 [3,1,4,1,5,9,2,6]을 버블 정렬로 정렬하는 과정을 단계별로 보이시오.',
+      ],
+      formulaCards: [
+        { title: '시간복잡도 Big-O', formula: 'O(1) < O(logn) < O(n) < O(nlogn) < O(n²)', note: '이진탐색=O(logn), 버블정렬=O(n²)' },
+        { title: '재귀 팩토리얼', formula: 'f(n) = n × f(n-1),  f(0) = 1', note: '탈출 조건(base case) 반드시 명시' },
+      ],
+      top10: [
+        { concept: '반복문 + 조건문 조합', prob: 85, note: '코드 직접 작성 문제 단골' },
+        { concept: 'OOP 4대 원칙', prob: 82, note: '캡슐화·상속·다형성·추상화' },
+        { concept: '재귀 함수 구현', prob: 78, note: '탈출 조건 필수 명시' },
+        { concept: '리스트 조작 메서드', prob: 72, note: 'append·pop·sort·index 구분' },
+        { concept: '시간복잡도 Big-O', prob: 68, note: '주요 알고리즘별 복잡도 암기' },
+      ],
+    },
+    '데이터 분석': {
+      keywords: ['DataFrame','groupby','merge','Matplotlib','Scikit-learn','전처리','결측치','정규화','과적합','교차검증'],
+      examProb: 72, importance: 'medium',
+      summary: 'Pandas/NumPy 데이터 조작과 Scikit-learn 모델 적용이 핵심. 데이터 전처리 파이프라인과 모델 평가 지표(정확도·정밀도·재현율) 이해 필수.',
+      professorStyle: '코드 작성 + 결과 해석 병행. "다음 코드를 완성하시오" + "혼동행렬을 해석하시오" 유형 빈출.',
+      dangerConcepts: ['훈련/검증/테스트 세트 혼동', '정밀도 vs 재현율 적용 상황 혼동', '과적합 징후 판별 오류'],
+      expectedQuestions: [
+        'Pandas로 결측치를 처리하는 3가지 방법을 코드와 함께 설명하시오.',
+        '과적합(overfitting)의 징후를 설명하고 교차검증을 통해 방지하는 방법을 기술하시오.',
+        '혼동행렬(Confusion Matrix)에서 정밀도, 재현율, F1-Score를 계산하시오.',
+      ],
+      formulaCards: [
+        { title: '정확도 (Accuracy)', formula: '(TP + TN) / (TP + TN + FP + FN)', note: '불균형 데이터에서는 신뢰 불가' },
+        { title: 'F1-Score', formula: '2 × (Precision × Recall) / (Precision + Recall)', note: '정밀도와 재현율의 조화평균' },
+        { title: '정규화 (Min-Max)', formula: '(x - x_min) / (x_max - x_min)', note: '0~1 범위로 스케일 조정' },
+      ],
+      top10: [
+        { concept: 'Pandas groupby + agg 활용', prob: 88, note: '집계 함수 조합 코드 작성' },
+        { concept: '과적합 vs 과소적합 판별', prob: 85, note: '훈련/검증 오차 그래프 해석' },
+        { concept: '혼동행렬 지표 계산', prob: 82, note: 'Precision·Recall·F1 공식 암기' },
+        { concept: '데이터 전처리 파이프라인', prob: 78, note: '결측치→인코딩→정규화 순서' },
+        { concept: '교차검증 k-fold', prob: 72, note: 'k=5 또는 10 일반적으로 사용' },
+      ],
+    },
+    '기타': {
+      keywords: ['핵심개념','요약','정리','개론','이론','원리','분석','모델','방법론'],
+      examProb: 65, importance: 'low',
+      summary: '전반적인 개념 이해 중심. 세부 내용보다 큰 흐름 파악이 중요. 기본 용어 정의와 주요 이론의 핵심만 압축 암기 권장.',
+      professorStyle: '개념 정의 + 사례 적용 혼합 출제. 전반적으로 교과서 위주 출제 경향.',
+      dangerConcepts: ['개념 간 혼동', '용어 정의 부정확', '사례 적용 오류'],
+      expectedQuestions: [
+        '핵심 개념을 정의하고 실제 사례에 적용하여 설명하시오.',
+        '두 이론의 공통점과 차이점을 비교하시오.',
+        '다음 사례를 분석하고 적합한 이론을 적용하시오.',
+      ],
+      formulaCards: [],
+      top10: [
+        { concept: '핵심 용어 정의', prob: 75, note: '교과서 정의 그대로 암기' },
+        { concept: '주요 이론 특징', prob: 70, note: '비교 문제 자주 출제' },
+        { concept: '사례 적용 능력', prob: 65, note: '이론 → 실제 사례 연결' },
+      ],
+    },
   };
   const sub = inferSubject(name);
   const d = subjectData[sub] || subjectData['기타'];
@@ -975,10 +1230,15 @@ function genMockAnalysis(name, ext) {
     keywords: d.keywords,
     importance: d.importance,
     examProb: d.examProb,
+    professorStyle: d.professorStyle,
+    dangerConcepts: d.dangerConcepts,
+    expectedQuestions: d.expectedQuestions,
+    formulaCards: d.formulaCards,
+    top10: d.top10,
     chapters: [
-      { title: '1장: 기초 개념', importance: 'high', summary: '핵심 용어 정의와 기본 원리' },
-      { title: '2장: 심화 내용', importance: d.importance, summary: '실제 문제 적용 및 사례 분석' },
-      { title: '3장: 종합 정리', importance: 'medium', summary: '전체 흐름 정리 및 예상 문제' },
+      { title: '1장: 핵심 개념 기초', importance: 'high', summary: '핵심 용어 정의와 기본 원리 — 출제 빈도 최상위' },
+      { title: '2장: 심화 이론 적용', importance: d.importance, summary: '실제 사례 분석과 계산 문제 위주' },
+      { title: '3장: 종합 정리', importance: 'medium', summary: '전체 흐름 복습 및 예상 문제 대비' },
     ],
   };
 }
@@ -1089,83 +1349,107 @@ function renderDashboard(el) {
   const total = State.materials.filter(m => m.status === 'complete').length;
   const highImportance = State.materials.filter(m => m.analysis && m.analysis.importance === 'high').length;
   const recent = State.materials.filter(m => m.status === 'complete').slice(-3).reverse();
+  const streak = getStreak();
+  const focusMat = getDailyFocus();
+  const dangerConcepts = getAllDangerConcepts().slice(0, 3);
+
+  // Compute AI readiness score
+  const avgProb = total > 0
+    ? Math.round(State.materials.filter(m=>m.status==='complete').reduce((s,m)=>s+(m.analysis?.examProb||0),0)/total)
+    : 0;
+  const weakestSub = total > 0
+    ? State.materials.filter(m=>m.status==='complete').sort((a,b)=>(a.analysis?.examProb||0)-(b.analysis?.examProb||0))[0]?.subject
+    : null;
 
   el.innerHTML = `
-    <!-- Welcome -->
-    <div style="margin-bottom:28px;">
-      <h1 style="font-size:24px;font-weight:700;margin-bottom:4px;">안녕하세요, 공부왕 님 👋</h1>
-      <p style="color:var(--text2);font-size:14px;">AI가 ${total}개의 자료를 분석 완료했어요. 오늘도 화이팅!</p>
+    <!-- Welcome Header -->
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:22px;flex-wrap:wrap;gap:16px;">
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap;">
+          <h1 style="font-size:24px;font-weight:800;letter-spacing:-.02em;">안녕하세요 👋</h1>
+          ${streak >= 2 ? `<span class="streak-badge">🔥 ${streak}일 연속</span>` : ''}
+        </div>
+        <p style="color:var(--text2);font-size:14px;">${total > 0 ? `AI가 <strong style="color:var(--text);">${total}개 자료</strong>, <strong style="color:var(--text);">${Object.keys(subjects).length}개 과목</strong>을 분석 완료했어요.` : '자료를 업로드하면 AI가 즉시 공부를 구조화해드려요.'}</p>
+      </div>
+      ${total > 0 ? `<button class="eve-cta" onclick="enterExamEve()">⚡ 시험 직전 모드</button>` : ''}
     </div>
 
+    <!-- 오늘의 AI 미션 -->
+    ${focusMat ? `
+    <div class="focus-gradient" style="margin-bottom:18px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <span class="ai-chip">🎯 AI 오늘의 미션</span>
+        ${dday!==null?`<span style="font-size:12px;color:rgba(129,140,248,.6);">D-${dday} 기준 최우선</span>`:''}
+      </div>
+      <div style="color:rgba(255,255,255,.45);font-size:12px;margin-bottom:4px;">지금 당장 집중해야 할 자료</div>
+      <div style="color:white;font-size:16px;font-weight:700;margin-bottom:10px;cursor:pointer;line-height:1.3;" onclick="showMaterialDetail('${focusMat.id}')">${focusMat.name}</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+        <div style="color:rgba(255,255,255,.45);font-size:13px;line-height:1.5;flex:1;">${(focusMat.analysis?.summary||'').slice(0,80)}...</div>
+        <button onclick="showMaterialDetail('${focusMat.id}')" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);color:white;padding:8px 18px;border-radius:9px;cursor:pointer;font-size:13px;font-family:inherit;font-weight:600;flex-shrink:0;">공부 시작 →</button>
+      </div>
+    </div>` : ''}
+
     <!-- Stat Cards -->
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px;" class="grid-3">
-      <!-- D-Day -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px;" class="grid-3">
       <div class="stat-card" style="position:relative;overflow:hidden;">
-        <div style="position:absolute;top:-20px;right:-20px;width:100px;height:100px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border-radius:50%;opacity:.08;"></div>
-        <div style="font-size:12px;font-weight:600;color:var(--text2);letter-spacing:.05em;text-transform:uppercase;margin-bottom:8px;">시험 D-Day</div>
+        <div style="position:absolute;top:-20px;right:-20px;width:90px;height:90px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border-radius:50%;opacity:.06;"></div>
+        <div style="font-size:11px;font-weight:700;color:var(--text2);letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px;">시험 D-Day</div>
         ${dday !== null ? `
-          <div style="font-size:36px;font-weight:900;color:${dday <= 3 ? '#ef4444' : dday <= 7 ? '#f59e0b' : '#6366f1'};">D-${dday}</div>
-          <div style="font-size:13px;color:var(--text2);margin-top:4px;">${State.examDate} 시험</div>
-          <button class="btn btn-secondary btn-sm" style="margin-top:12px;" onclick="changeExamDate()">날짜 변경</button>
+          <div style="font-size:38px;font-weight:900;letter-spacing:-.03em;color:${dday<=3?'#ef4444':dday<=7?'#f59e0b':'#6366f1'};">D-${dday}</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:4px;">${State.examDate}</div>
+          <button class="btn btn-secondary btn-sm" style="margin-top:12px;font-size:12px;" onclick="changeExamDate()">날짜 변경</button>
         ` : `
-          <div style="font-size:15px;color:var(--text2);margin:12px 0;">시험일을 설정하세요</div>
+          <div style="font-size:14px;color:var(--text2);margin:10px 0 14px;">시험일을 설정하세요</div>
           <button class="btn btn-primary btn-sm" onclick="setExamDate()">+ 시험일 설정</button>
         `}
       </div>
-
-      <!-- Stats -->
       <div class="stat-card">
-        <div style="font-size:12px;font-weight:600;color:var(--text2);letter-spacing:.05em;text-transform:uppercase;margin-bottom:12px;">자료 현황</div>
+        <div style="font-size:11px;font-weight:700;color:var(--text2);letter-spacing:.06em;text-transform:uppercase;margin-bottom:12px;">자료 현황</div>
         <div style="display:flex;flex-direction:column;gap:10px;">
           <div style="display:flex;justify-content:space-between;align-items:center;">
-            <span style="font-size:14px;color:var(--text2);">총 자료</span>
-            <span style="font-size:18px;font-weight:700;">${total}개</span>
+            <span style="font-size:13px;color:var(--text2);">분석 완료</span>
+            <span style="font-size:20px;font-weight:800;">${total}</span>
           </div>
           <div style="display:flex;justify-content:space-between;align-items:center;">
-            <span style="font-size:14px;color:var(--text2);">🔥 고중요도</span>
-            <span style="font-size:18px;font-weight:700;color:#ef4444;">${highImportance}개</span>
+            <span style="font-size:13px;color:var(--text2);">🔥 고중요도</span>
+            <span style="font-size:20px;font-weight:800;color:#ef4444;">${highImportance}</span>
           </div>
           <div style="display:flex;justify-content:space-between;align-items:center;">
-            <span style="font-size:14px;color:var(--text2);">과목 수</span>
-            <span style="font-size:18px;font-weight:700;">${Object.keys(subjects).length}개</span>
+            <span style="font-size:13px;color:var(--text2);">과목 수</span>
+            <span style="font-size:20px;font-weight:800;">${Object.keys(subjects).length}</span>
           </div>
         </div>
       </div>
-
-      <!-- AI Diagnosis -->
-      <div class="stat-card" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;color:white;">
-        <div style="font-size:12px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;margin-bottom:8px;opacity:.8;">AI 공부 진단</div>
-        <div style="font-size:22px;font-weight:700;margin-bottom:4px;">준비도 76%</div>
-        <div style="background:rgba(255,255,255,.2);border-radius:99px;height:6px;margin-bottom:8px;overflow:hidden;">
-          <div style="background:white;width:76%;height:100%;border-radius:99px;"></div>
+      <div class="stat-card" style="background:linear-gradient(135deg,#4f46e5,#7c3aed);border:none;color:white;">
+        <div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px;opacity:.7;">AI 시험 준비도</div>
+        <div style="font-size:36px;font-weight:900;letter-spacing:-.03em;margin-bottom:6px;">${avgProb}<span style="font-size:20px;">%</span></div>
+        <div style="background:rgba(255,255,255,.18);border-radius:99px;height:5px;margin-bottom:10px;overflow:hidden;">
+          <div style="background:white;width:${avgProb}%;height:100%;border-radius:99px;transition:width .6s;"></div>
         </div>
-        <div style="font-size:13px;opacity:.85;">통계학 추가 공부 필요</div>
-        <button class="btn btn-sm" style="margin-top:12px;background:rgba(255,255,255,.2);color:white;border:1px solid rgba(255,255,255,.3);" onclick="navigate('roadmap',null)">로드맵 보기 →</button>
+        <div style="font-size:12px;opacity:.7;margin-bottom:14px;">${weakestSub?`${weakestSub} 추가 학습 권장`:total>0?'전체 과목 분석 완료':'자료를 업로드해주세요'}</div>
+        <button onclick="enterExamEve()" style="background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.25);color:white;padding:7px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-family:inherit;font-weight:700;width:100%;">⚡ 직전 브리핑 보기</button>
       </div>
     </div>
 
-    <!-- Today's Recommendation -->
-    ${dday !== null ? `
-    <div class="card" style="padding:20px;margin-bottom:24px;background:linear-gradient(135deg,var(--primary-light),var(--surface));border-color:var(--primary);">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
-        <span style="font-size:20px;">🎯</span>
-        <div>
-          <div style="font-weight:700;font-size:15px;">오늘 공부 추천</div>
-          <div style="font-size:13px;color:var(--text2);">시험 D-${dday} 기준 최적 플랜</div>
+    <!-- 위험 개념 경보 -->
+    ${dangerConcepts.length > 0 ? `
+    <div class="card" style="padding:18px;margin-bottom:18px;border-color:rgba(239,68,68,.2);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:15px;">⚠️</span>
+          <div style="font-weight:700;font-size:14px;">AI 경보 — 가장 놓치기 쉬운 개념</div>
         </div>
+        <span class="ai-chip">AI 분석</span>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;" class="grid-3">
-        ${[
-          { time: '오전 2h', sub: '경영학', content: 'BCG/SWOT 핵심 정리', color: '#3b82f6' },
-          { time: '오후 1.5h', sub: '통계학', content: 't-test 문제 풀이', color: '#8b5cf6' },
-          { time: '저녁 1h', sub: '경제학', content: '탄력성 계산 연습', color: '#10b981' },
-        ].map(r => `
-          <div style="background:var(--surface);border-radius:12px;padding:14px;border:1px solid var(--border);">
-            <div style="font-size:12px;color:${r.color};font-weight:600;margin-bottom:4px;">${r.time}</div>
-            <div style="font-size:14px;font-weight:600;margin-bottom:2px;">${r.sub}</div>
-            <div style="font-size:13px;color:var(--text2);">${r.content}</div>
-          </div>
-        `).join('')}
+      <div style="display:flex;flex-direction:column;gap:7px;">
+        ${dangerConcepts.map(d=>{
+          const meta = SUBJECTS_META[d.subject]||SUBJECTS_META['기타'];
+          return `<div class="danger-card" onclick="showMaterialDetail('${d.matId}')" style="cursor:pointer;">
+            <span style="font-size:14px;flex-shrink:0;">🔴</span>
+            <span style="font-size:13px;font-weight:500;">${d.concept}</span>
+            <span style="font-size:11px;color:var(--text2);margin-left:4px;">${meta.emoji} ${d.subject}</span>
+          </div>`;
+        }).join('')}
       </div>
     </div>` : ''}
 
@@ -1544,6 +1828,54 @@ function renderDetail(el) {
           }).join('')}
         </div>
       </div>
+
+      <!-- Professor Style & Danger Concepts -->
+      ${mat.analysis.professorStyle || mat.analysis.dangerConcepts ? `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;" class="grid-2">
+        ${mat.analysis.professorStyle ? `
+        <div class="card" style="padding:20px;">
+          <div style="font-size:13px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:6px;"><span>👨‍🏫</span> 교수 출제 스타일 분석</div>
+          <p style="font-size:13px;color:var(--text2);line-height:1.7;">${mat.analysis.professorStyle}</p>
+        </div>` : ''}
+        ${mat.analysis.dangerConcepts?.length ? `
+        <div class="card" style="padding:20px;border-color:rgba(239,68,68,.2);">
+          <div style="font-size:13px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:6px;"><span>⚠️</span> 가장 자주 틀리는 개념</div>
+          <div style="display:flex;flex-direction:column;gap:7px;">
+            ${mat.analysis.dangerConcepts.map(c=>`
+              <div class="danger-card" style="padding:8px 12px;">
+                <span style="font-size:12px;flex-shrink:0;color:#ef4444;">•</span>
+                <span style="font-size:13px;">${c}</span>
+              </div>`).join('')}
+          </div>
+        </div>` : ''}
+      </div>` : ''}
+
+      <!-- Formula Cards -->
+      ${mat.analysis.formulaCards?.length ? `
+      <div class="card" style="padding:24px;margin-bottom:20px;">
+        <div style="font-size:15px;font-weight:700;margin-bottom:14px;">📌 암기 필수 공식</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;">
+          ${mat.analysis.formulaCards.map(f=>`
+            <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px;">
+              <div style="font-size:12px;color:var(--text2);font-weight:600;margin-bottom:8px;">${f.title}</div>
+              <div class="formula-block" style="margin-bottom:8px;">${f.formula}</div>
+              ${f.note?`<div style="font-size:12px;color:var(--text2);">💡 ${f.note}</div>`:''}
+            </div>`).join('')}
+        </div>
+      </div>` : ''}
+
+      <!-- Expected Questions -->
+      ${mat.analysis.expectedQuestions?.length ? `
+      <div class="card" style="padding:24px;margin-bottom:20px;">
+        <div style="font-size:15px;font-weight:700;margin-bottom:14px;">🧠 AI 예상 서술형 문제</div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          ${mat.analysis.expectedQuestions.map((q,i)=>`
+            <div style="background:var(--surface2);border-radius:12px;padding:14px;display:flex;gap:12px;">
+              <span style="color:var(--primary);font-weight:700;font-size:13px;flex-shrink:0;">Q${i+1}</span>
+              <span style="font-size:13px;line-height:1.7;color:var(--text);">${q}</span>
+            </div>`).join('')}
+        </div>
+      </div>` : ''}
 
       <!-- Notes -->
       <div class="card" style="padding:24px;margin-bottom:20px;">
@@ -2397,6 +2729,283 @@ function answerQuiz(idx) {
 }
 
 // ────────────────────────────────────────────
+// STREAK SYSTEM
+// ────────────────────────────────────────────
+function getStreak() {
+  const today = new Date().toISOString().split('T')[0];
+  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+  let s = JSON.parse(localStorage.getItem('sa_streak') || '{"count":0,"lastDate":null}');
+  if (s.lastDate === today) return s.count;
+  if (s.lastDate === yesterday) {
+    s.count++;
+  } else {
+    s.count = 1;
+  }
+  s.lastDate = today;
+  localStorage.setItem('sa_streak', JSON.stringify(s));
+  return s.count;
+}
+
+function updateStreakBadge() {
+  const count = getStreak();
+  const badge = document.getElementById('streak-badge');
+  const num = document.getElementById('streak-count');
+  if (!badge || !num) return;
+  num.textContent = count;
+  badge.style.display = count >= 2 ? '' : 'none';
+}
+
+// ────────────────────────────────────────────
+// DAILY FOCUS
+// ────────────────────────────────────────────
+function getDailyFocus() {
+  const mats = State.materials.filter(m => m.status === 'complete');
+  if (mats.length === 0) return null;
+  // Find weakest (lowest examProb that isn't reviewed today)
+  const today = new Date().toISOString().split('T')[0];
+  const unreviewed = mats.filter(m => !State.reviews[m.id] || State.reviews[m.id].lastDate !== today);
+  if (unreviewed.length === 0) return mats[0];
+  // Sort: high importance first, then by examProb desc
+  const sorted = [...unreviewed].sort((a,b) => {
+    const impOrder = { high: 3, medium: 2, low: 1 };
+    const ia = impOrder[a.analysis?.importance||'low'];
+    const ib = impOrder[b.analysis?.importance||'low'];
+    if (ia !== ib) return ib - ia;
+    return (b.analysis?.examProb||0) - (a.analysis?.examProb||0);
+  });
+  return sorted[0];
+}
+
+function getAllDangerConcepts() {
+  return State.materials
+    .filter(m => m.status === 'complete' && m.analysis?.dangerConcepts?.length)
+    .flatMap(m => m.analysis.dangerConcepts.map(c => ({ concept: c, subject: m.subject, matId: m.id })))
+    .slice(0, 6);
+}
+
+// ────────────────────────────────────────────
+// EXAM EVE MODE
+// ────────────────────────────────────────────
+function enterExamEve() {
+  const overlay = document.getElementById('exam-eve-overlay');
+  if (!overlay) return;
+  const dday = getDday();
+  const mats = State.materials.filter(m => m.status === 'complete');
+
+  // Update header badges
+  const ddayBadge = document.getElementById('eve-dday-badge');
+  const matCount = document.getElementById('eve-mat-count');
+  if (ddayBadge) {
+    ddayBadge.style.display = dday !== null ? '' : 'none';
+    ddayBadge.textContent = dday !== null ? `D-${dday}` : '';
+  }
+  if (matCount) matCount.textContent = `자료 ${mats.length}개 분석`;
+
+  overlay.style.display = 'block';
+  document.body.style.overflow = 'hidden';
+  renderExamEveContent();
+}
+
+function exitExamEve() {
+  const overlay = document.getElementById('exam-eve-overlay');
+  if (overlay) overlay.style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+async function renderExamEveContent() {
+  const el = document.getElementById('eve-content');
+  if (!el) return;
+  const mats = State.materials.filter(m => m.status === 'complete');
+
+  if (mats.length === 0) {
+    el.innerHTML = `<div style="text-align:center;padding:100px 20px;">
+      <div style="font-size:48px;margin-bottom:16px;opacity:.4;">📂</div>
+      <div style="color:rgba(255,255,255,.5);font-size:16px;">자료를 먼저 업로드해주세요</div>
+      <button onclick="exitExamEve();navigate('upload',null);" style="margin-top:20px;background:#6366f1;color:white;border:none;padding:10px 24px;border-radius:10px;cursor:pointer;font-family:inherit;font-size:14px;">자료 업로드하기</button>
+    </div>`;
+    return;
+  }
+
+  // Loading state
+  el.innerHTML = `<div style="text-align:center;padding:100px 20px;">
+    <div style="font-size:52px;margin-bottom:20px;animation:pulse-ring .8s infinite;">⚡</div>
+    <div style="color:white;font-size:20px;font-weight:700;margin-bottom:8px;">AI 브리핑 생성 중</div>
+    <div style="color:rgba(255,255,255,.35);font-size:14px;margin-bottom:24px;">모든 자료를 분석해 핵심만 추리는 중...</div>
+    <div style="display:flex;flex-direction:column;gap:8px;max-width:320px;margin:0 auto;text-align:left;">
+      ${['반복 출제 패턴 감지 중', '교수 강조 표현 추출 중', '시험 확률 최종 계산 중', '브리핑 카드 생성 중'].map((s,i)=>`
+        <div style="display:flex;align-items:center;gap:10px;opacity:0;animation:slideUp .4s ${i*.15}s ease both;">
+          <div style="width:6px;height:6px;border-radius:50%;background:#818cf8;flex-shrink:0;"></div>
+          <span style="color:rgba(255,255,255,.4);font-size:13px;">${s}</span>
+        </div>`).join('')}
+    </div>
+  </div>`;
+
+  // Try GPT briefing if API key set
+  await new Promise(r => setTimeout(r, 1200));
+  let gptInsight = null;
+  if (getApiKey()) {
+    const ctx = mats.map(m=>`[${m.subject}] ${m.name}: ${m.analysis?.summary}`).join('\n');
+    const prompt = `다음 학습 자료들을 분석해 시험 직전 브리핑을 제공해. 한국어, 간결하게.\n\n${ctx}\n\nJSON 형식으로만 응답 (다른 텍스트 없이):\n{"headline":"AI가 파악한 이번 시험의 핵심 포인트 1문장","top3":"반드시 나와야 할 3가지 (bullet 형식, 각 줄 앞에 • 붙이기)","trap":"가장 많이 틀리는 함정 1가지 (한 문장)","lastHour":"시험 1시간 전 행동 지침 (2~3줄)"}`;
+    try {
+      const res = await callOpenAI([{role:'user',content:prompt}], 400);
+      if (res) { const m = res.match(/\{[\s\S]*\}/); if (m) gptInsight = JSON.parse(m[0]); }
+    } catch(e) {}
+  }
+
+  const sorted = [...mats].sort((a,b)=>(b.analysis?.examProb||0)-(a.analysis?.examProb||0));
+  const allSubjects = [...new Set(mats.map(m=>m.subject))];
+  const allDanger = getAllDangerConcepts();
+  const allExpectedQ = mats.flatMap(m=>(m.analysis?.expectedQuestions||[]).map(q=>({q,subject:m.subject}))).slice(0,5);
+  const allFormulas = mats.flatMap(m=>(m.analysis?.formulaCards||[]).map(f=>({...f,subject:m.subject}))).slice(0,8);
+
+  el.innerHTML = `
+    <!-- 타이틀 -->
+    <div style="text-align:center;margin-bottom:40px;">
+      <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(129,140,248,.12);border:1px solid rgba(129,140,248,.25);padding:5px 16px;border-radius:99px;margin-bottom:16px;">
+        <span style="width:6px;height:6px;border-radius:50%;background:#818cf8;"></span>
+        <span style="color:#818cf8;font-size:12px;font-weight:700;">AI 분석 완료 — ${mats.length}개 자료 · ${allSubjects.length}개 과목</span>
+      </div>
+      <h1 style="color:white;font-size:30px;font-weight:900;letter-spacing:-.03em;line-height:1.2;margin-bottom:10px;">시험 직전 브리핑</h1>
+      <p style="color:rgba(255,255,255,.35);font-size:14px;">모든 자료를 분석해 시험에 나올 핵심만 추렸어요</p>
+    </div>
+
+    ${gptInsight ? `
+    <!-- GPT 실시간 인사이트 -->
+    <div style="background:rgba(129,140,248,.08);border:1px solid rgba(129,140,248,.2);border-radius:16px;padding:22px;margin-bottom:28px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+        <span style="font-size:16px;">🤖</span>
+        <span style="color:#818cf8;font-size:12px;font-weight:700;letter-spacing:.04em;">GPT LIVE 분석</span>
+        <span style="background:#818cf8;color:white;font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;">실시간</span>
+      </div>
+      <div style="color:white;font-size:16px;font-weight:700;margin-bottom:12px;line-height:1.5;">${gptInsight.headline||''}</div>
+      <div style="color:rgba(255,255,255,.7);font-size:14px;line-height:1.9;white-space:pre-line;margin-bottom:${gptInsight.trap?'14px':'0'};">${gptInsight.top3||''}</div>
+      ${gptInsight.trap?`<div style="background:rgba(239,68,68,.12);border-left:3px solid #ef4444;padding:10px 14px;border-radius:0 8px 8px 0;color:#fca5a5;font-size:13px;">⚠️ 함정 주의: ${gptInsight.trap}</div>`:''}
+    </div>` : ''}
+
+    <!-- 출제 확률 TOP -->
+    <div style="margin-bottom:32px;">
+      <div class="eve-section-label">🔥 시험 출제 확률 분석</div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        ${sorted.map((m, i) => {
+          const prob = m.analysis?.examProb || 0;
+          const color = prob>=85?'#34d399':prob>=70?'#fbbf24':'rgba(255,255,255,.3)';
+          const barColor = prob>=85?'linear-gradient(90deg,#34d399,#10b981)':prob>=70?'linear-gradient(90deg,#fbbf24,#f59e0b)':'rgba(255,255,255,.15)';
+          const meta = SUBJECTS_META[m.subject]||SUBJECTS_META['기타'];
+          return `
+          <div class="eve-card" onclick="exitExamEve();showMaterialDetail('${m.id}')" style="cursor:pointer;">
+            <div style="display:flex;align-items:center;gap:14px;">
+              <div style="width:26px;text-align:center;color:${i<3?'#fbbf24':'rgba(255,255,255,.2)'};font-size:14px;font-weight:800;flex-shrink:0;">${i+1}</div>
+              <div style="flex:1;min-width:0;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;gap:8px;">
+                  <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                    <span style="color:rgba(255,255,255,.85);font-size:14px;font-weight:600;">${m.name.replace(/\.[^/.]+$/,'')}</span>
+                    <span style="color:rgba(255,255,255,.3);font-size:12px;margin-left:8px;">${meta.emoji} ${m.subject}</span>
+                  </div>
+                  <span style="color:${color};font-size:15px;font-weight:800;flex-shrink:0;">${prob}%</span>
+                </div>
+                <div style="height:4px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden;">
+                  <div class="prob-bar-fill" style="height:100%;width:${prob}%;background:${barColor};border-radius:99px;"></div>
+                </div>
+                ${m.analysis?.summary?`<div style="color:rgba(255,255,255,.3);font-size:12px;margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${m.analysis.summary.slice(0,80)}...</div>`:''}
+              </div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+
+    <!-- 과목별 핵심 요약 -->
+    <div style="margin-bottom:32px;">
+      <div class="eve-section-label">📚 과목별 핵심 요약</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;">
+        ${allSubjects.map(sub => {
+          const subMats = mats.filter(m=>m.subject===sub);
+          const kws = [...new Set(subMats.flatMap(m=>m.analysis?.keywords||[]))].slice(0,7);
+          const maxProb = Math.max(...subMats.map(m=>m.analysis?.examProb||0));
+          const meta = SUBJECTS_META[sub]||SUBJECTS_META['기타'];
+          const style = subMats[0]?.analysis?.professorStyle||'';
+          return `
+          <div class="eve-card">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+              <span style="color:white;font-size:14px;font-weight:700;">${meta.emoji} ${sub}</span>
+              <span style="color:${maxProb>=85?'#34d399':'rgba(255,255,255,.3)'};font-size:13px;font-weight:700;">${maxProb}%</span>
+            </div>
+            ${style?`<div style="color:rgba(255,255,255,.35);font-size:11px;margin-bottom:10px;line-height:1.5;">${style}</div>`:''}
+            <div style="display:flex;flex-wrap:wrap;gap:5px;">
+              ${kws.map(k=>`<span style="font-size:11px;padding:3px 9px;background:rgba(255,255,255,.07);color:rgba(255,255,255,.6);border-radius:99px;">${k}</span>`).join('')}
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+
+    <!-- 위험 개념 (자주 틀리는 것) -->
+    ${allDanger.length>0?`
+    <div style="margin-bottom:32px;">
+      <div class="eve-section-label">⚠️ 가장 많이 틀리는 함정 개념</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        ${allDanger.map((d,i)=>{
+          const meta = SUBJECTS_META[d.subject]||SUBJECTS_META['기타'];
+          return `
+          <div style="display:flex;align-items:center;gap:12px;padding:13px 16px;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.14);border-radius:12px;">
+            <span style="color:#ef4444;font-size:14px;font-weight:800;flex-shrink:0;">${i+1}</span>
+            <div style="flex:1;">
+              <span style="color:rgba(255,255,255,.8);font-size:13px;">${d.concept}</span>
+              <span style="color:rgba(255,255,255,.25);font-size:11px;margin-left:8px;">${meta.emoji} ${d.subject}</span>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`:''}
+
+    <!-- 예상 서술형 문제 -->
+    ${allExpectedQ.length>0?`
+    <div style="margin-bottom:32px;">
+      <div class="eve-section-label">🧠 AI 예상 서술형 문제</div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        ${allExpectedQ.map((item,i)=>{
+          const meta = SUBJECTS_META[item.subject]||SUBJECTS_META['기타'];
+          return `
+          <div class="eve-card">
+            <div style="display:flex;gap:12px;">
+              <span style="color:#818cf8;font-size:12px;font-weight:700;flex-shrink:0;padding-top:1px;">Q${i+1}</span>
+              <div>
+                <div style="color:rgba(255,255,255,.8);font-size:14px;line-height:1.7;margin-bottom:6px;">${item.q}</div>
+                <span style="font-size:11px;padding:2px 8px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.35);border-radius:99px;">${meta.emoji} ${item.subject}</span>
+              </div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`:''}
+
+    <!-- 암기 필수 공식 -->
+    ${allFormulas.length>0?`
+    <div style="margin-bottom:32px;">
+      <div class="eve-section-label">📌 암기 필수 공식</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;">
+        ${allFormulas.map(f=>`
+          <div class="eve-card">
+            <div style="color:rgba(255,255,255,.4);font-size:11px;font-weight:600;margin-bottom:8px;">${f.title}</div>
+            <div style="font-family:monospace;font-size:13px;font-weight:700;color:#a5b4fc;background:rgba(129,140,248,.1);padding:10px 12px;border-radius:8px;margin-bottom:8px;line-height:1.6;">${f.formula}</div>
+            ${f.note?`<div style="color:rgba(255,255,255,.3);font-size:11px;line-height:1.5;">${f.note}</div>`:''}
+          </div>`).join('')}
+      </div>
+    </div>`:''}
+
+    <!-- 마지막 조언 -->
+    <div style="background:rgba(129,140,248,.06);border:1px solid rgba(129,140,248,.15);border-radius:18px;padding:24px;text-align:center;margin-bottom:20px;">
+      <div style="font-size:24px;margin-bottom:12px;">🎯</div>
+      <div style="color:white;font-size:16px;font-weight:700;margin-bottom:8px;">시험 당일 최종 전략</div>
+      <div style="color:rgba(255,255,255,.45);font-size:13px;line-height:1.9;max-width:500px;margin:0 auto;">
+        ${gptInsight?.lastHour || '새로운 내용 공부는 금물 — 고중요도 자료만 빠르게 훑기\n공식은 마지막으로 손으로 직접 써보기\n예상 서술형 핵심 포인트 재확인 후 입장'}
+      </div>
+    </div>
+    <div style="height:60px;"></div>
+  `;
+}
+
+// ────────────────────────────────────────────
 // SEARCH
 // ────────────────────────────────────────────
 function handleSearch(query) {
@@ -2468,6 +3077,7 @@ function init() {
   updateSidebar();
   updateReviewBadge();
   updateApiDot();
+  updateStreakBadge();
   renderView();
 
   // Drag & drop on whole window

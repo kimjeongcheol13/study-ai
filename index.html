@@ -452,6 +452,90 @@ body {
   z-index: 40;
 }
 
+/* ── Settings Modal ── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.5);
+  z-index: 200;
+  display: flex; align-items: center; justify-content: center;
+  animation: fadeIn .2s ease;
+}
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 28px;
+  width: 90%; max-width: 500px;
+  box-shadow: var(--shadow-lg);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* ── Quiz ── */
+.quiz-option {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 13px 16px;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all .15s;
+  font-family: inherit;
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+.quiz-option:hover:not(:disabled) { border-color: var(--primary); background: var(--primary-light); }
+.quiz-option.correct { border-color: #16a34a !important; background: #f0fdf4 !important; color: #16a34a !important; font-weight: 600; }
+.quiz-option.wrong { border-color: #ef4444 !important; background: #fef2f2 !important; color: #ef4444 !important; }
+.quiz-option.reveal { border-color: #16a34a !important; background: #f0fdf4 !important; color: #16a34a !important; }
+.dark .quiz-option.correct { background: #052e16 !important; }
+.dark .quiz-option.wrong { background: #450a0a !important; }
+.dark .quiz-option.reveal { background: #052e16 !important; }
+
+/* ── Notes ── */
+.note-editor {
+  width: 100%;
+  min-height: 200px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  font-size: 14px;
+  color: var(--text);
+  font-family: inherit;
+  line-height: 1.8;
+  resize: vertical;
+  outline: none;
+  transition: border .2s;
+}
+.note-editor:focus { border-color: var(--primary); background: var(--surface); }
+
+/* ── Review ── */
+.review-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 10px;
+  transition: box-shadow .2s;
+}
+.review-item:hover { box-shadow: var(--shadow-lg); }
+.review-due { border-left: 4px solid #f59e0b; }
+.review-overdue { border-left: 4px solid #ef4444; }
+.review-done { border-left: 4px solid #16a34a; opacity: .7; }
+
+/* ── API dot ── */
+.api-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.api-dot.on { background: #16a34a; box-shadow: 0 0 0 2px #bbf7d0; }
+.api-dot.off { background: #94a3b8; }
+
 /* Scrollbar */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -532,6 +616,16 @@ body {
       <div class="nav-item" data-view="chat" onclick="navigate('chat',this)">
         <span class="icon">🤖</span> AI 채팅
       </div>
+      <div class="nav-item" data-view="quiz" onclick="navigate('quiz',this)">
+        <span class="icon">📝</span> 퀴즈
+      </div>
+      <div class="nav-item" data-view="notes" onclick="navigate('notes',this)">
+        <span class="icon">📓</span> 노트
+      </div>
+      <div class="nav-item" data-view="review" onclick="navigate('review',this)">
+        <span class="icon">🔄</span> 복습 스케줄
+        <span class="nav-badge" id="review-count" style="background:#f59e0b;display:none;">0</span>
+      </div>
     </div>
 
     <div class="sidebar-section" id="subjects-sidebar">
@@ -551,6 +645,11 @@ body {
       <div class="nav-item" onclick="toggleDark()" style="font-size:13px;">
         <span class="icon" id="dark-icon">🌙</span>
         <span id="dark-label">다크 모드</span>
+      </div>
+      <div class="nav-item" onclick="showSettings()" style="font-size:13px;margin-top:4px;">
+        <span class="icon">⚙️</span>
+        <span>설정 / API 키</span>
+        <span class="api-dot off" id="api-status-dot" style="margin-left:auto;"></span>
       </div>
     </div>
   </aside>
@@ -572,6 +671,36 @@ body {
 
     <!-- Content -->
     <main id="content"></main>
+  </div>
+</div>
+
+<!-- Settings Modal -->
+<div id="settings-modal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closeSettings()">
+  <div class="modal">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
+      <h2 style="font-size:18px;font-weight:700;">⚙️ 설정</h2>
+      <button onclick="closeSettings()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text2);line-height:1;">✕</button>
+    </div>
+
+    <div style="margin-bottom:24px;">
+      <div style="font-size:14px;font-weight:700;margin-bottom:6px;">🤖 OpenAI API 키</div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:10px;">입력하면 GPT-4o-mini로 실제 AI 응답 및 퀴즈 생성을 사용합니다. 키는 로컬에만 저장됩니다.</div>
+      <input id="api-key-input" type="password" placeholder="sk-proj-..." style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:10px;background:var(--surface2);color:var(--text);font-size:14px;outline:none;font-family:inherit;box-sizing:border-box;">
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+        <button class="btn btn-primary btn-sm" onclick="saveApiKey()">저장</button>
+        <button class="btn btn-secondary btn-sm" onclick="clearApiKey()">삭제</button>
+        <button class="btn btn-secondary btn-sm" onclick="testApiKey()">연결 테스트</button>
+      </div>
+      <div id="api-status-msg" style="font-size:13px;margin-top:10px;"></div>
+    </div>
+
+    <hr style="border:none;border-top:1px solid var(--border);margin-bottom:24px;">
+
+    <div style="margin-bottom:16px;">
+      <div style="font-size:14px;font-weight:700;margin-bottom:6px;">🗑️ 데이터 관리</div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:10px;">모든 자료, 노트, 복습 기록을 초기화합니다.</div>
+      <button class="btn btn-secondary btn-sm" style="color:#ef4444;border-color:#fecaca;" onclick="resetAllData()">모든 데이터 초기화</button>
+    </div>
   </div>
 </div>
 
@@ -742,6 +871,8 @@ const DEFAULT_CHAT = [
 // ────────────────────────────────────────────
 // STATE
 // ────────────────────────────────────────────
+const REVIEW_INTERVALS = [1, 3, 7, 14, 30]; // Ebbinghaus forgetting curve
+
 const State = {
   view: 'dashboard',
   materials: [],
@@ -750,6 +881,9 @@ const State = {
   darkMode: false,
   subjectFilter: 'all',
   analyzingId: null,
+  notes: {},         // { matId: string }
+  reviews: {},       // { matId: { count: 0, lastDate: 'YYYY-MM-DD', nextDate: 'YYYY-MM-DD' } }
+  quizState: null,   // current active quiz session
 
   load() {
     const saved = localStorage.getItem('sa_data');
@@ -759,6 +893,8 @@ const State = {
       this.examDate = d.examDate || null;
       this.darkMode = d.darkMode || false;
       this.chatMessages = d.chatMessages || [...DEFAULT_CHAT];
+      this.notes = d.notes || {};
+      this.reviews = d.reviews || {};
     } else {
       this.materials = [...DEFAULT_MATERIALS];
     }
@@ -770,6 +906,8 @@ const State = {
       examDate: this.examDate,
       darkMode: this.darkMode,
       chatMessages: this.chatMessages,
+      notes: this.notes,
+      reviews: this.reviews,
     }));
   },
 
@@ -937,6 +1075,9 @@ function renderView() {
     case 'timeline':   renderTimeline(container); break;
     case 'chat':       renderChat(container); break;
     case 'detail':     renderDetail(container); break;
+    case 'quiz':       renderQuiz(container); break;
+    case 'notes':      renderNotes(container); break;
+    case 'review':     renderReview(container); break;
   }
   container.style.cssText += 'flex:1;overflow-y:auto;padding:28px;';
 }
@@ -1027,6 +1168,32 @@ function renderDashboard(el) {
         `).join('')}
       </div>
     </div>` : ''}
+
+    <!-- Review Reminder -->
+    ${(()=>{
+      const due = getDueReviews();
+      if (due.length === 0) return '';
+      return `
+      <div class="card" style="padding:20px;margin-bottom:24px;border-color:#f59e0b;background:linear-gradient(135deg,#fffbeb,var(--surface));">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+          <span style="font-size:20px;">🔄</span>
+          <div>
+            <div style="font-weight:700;font-size:15px;">오늘 복습할 자료 <span style="color:#d97706;">${due.length}개</span></div>
+            <div style="font-size:13px;color:var(--text2);">에빙하우스 망각곡선 기반 복습 알림</div>
+          </div>
+          <button class="btn btn-sm" style="margin-left:auto;background:#f59e0b;color:white;" onclick="navigate('review',null)">복습하기 →</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          ${due.slice(0,3).map(m=>`
+            <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface);border-radius:10px;border:1px solid var(--border);">
+              <span>${getFileIcon(m.type)}</span>
+              <span style="font-size:13px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${m.name}</span>
+              <button class="btn btn-secondary btn-sm" style="font-size:12px;" onclick="markReviewed('${m.id}');renderView();">완료</button>
+            </div>`).join('')}
+          ${due.length > 3 ? `<div style="font-size:13px;color:var(--text2);text-align:center;padding:4px;">외 ${due.length-3}개 더...</div>` : ''}
+        </div>
+      </div>`;
+    })()}
 
     <!-- Upload Zone (mini) -->
     <div class="card" style="padding:20px;margin-bottom:24px;">
@@ -1378,14 +1545,35 @@ function renderDetail(el) {
         </div>
       </div>
 
+      <!-- Notes -->
+      <div class="card" style="padding:24px;margin-bottom:20px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div style="font-size:15px;font-weight:700;">📓 내 노트</div>
+          <button class="btn btn-secondary btn-sm" onclick="saveNote('${mat.id}')">저장</button>
+        </div>
+        <textarea class="note-editor" id="note-${mat.id}" placeholder="이 자료에 대한 메모, 핵심 정리, 이해한 내용을 자유롭게 작성하세요...">${(State.notes[mat.id]||'')}</textarea>
+        <div style="font-size:12px;color:var(--text2);margin-top:6px;">Ctrl+Enter로 저장</div>
+      </div>
+
       <!-- Actions -->
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
         <button class="btn btn-primary" onclick="navigate('chat',null)">🤖 AI에게 질문하기</button>
-        <button class="btn btn-secondary" onclick="navigate('roadmap',null)">🗺️ 로드맵에서 보기</button>
+        <button class="btn btn-secondary" onclick="startQuiz('${mat.id}')">📝 퀴즈 풀기</button>
+        <button class="btn btn-secondary" onclick="markReviewed('${mat.id}');alert('복습 완료! 다음 복습일이 설정되었어요.')">🔄 복습 완료</button>
+        <button class="btn btn-secondary" onclick="navigate('roadmap',null)">🗺️ 로드맵</button>
         <button class="btn btn-secondary" style="color:#ef4444;" onclick="deleteMaterial('${mat.id}')">🗑️ 삭제</button>
       </div>
     </div>
   `;
+
+  // Attach note save shortcut
+  const _noteId = mat.id;
+  setTimeout(() => {
+    const noteEl = document.getElementById('note-' + _noteId);
+    if (noteEl) noteEl.addEventListener('keydown', e => {
+      if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); saveNote(_noteId); }
+    });
+  }, 0);
 }
 
 function togglePin(id) {
@@ -1589,12 +1777,13 @@ function scrollChatToBottom() {
   if (msgs) msgs.scrollTop = msgs.scrollHeight;
 }
 
-function sendChat() {
+async function sendChat() {
   const input = document.getElementById('chat-input');
   if (!input) return;
   const text = input.value.trim();
   if (!text) return;
   input.value = '';
+  input.disabled = true;
   State.chatMessages.push({ role: 'user', text });
   appendChatBubble({ role: 'user', text });
 
@@ -1610,14 +1799,13 @@ function sendChat() {
     scrollChatToBottom();
   }
 
-  setTimeout(() => {
-    const typing = document.getElementById(typingId);
-    if (typing) typing.remove();
-    const reply = getAIReply(text);
-    State.chatMessages.push({ role: 'ai', text: reply });
-    State.save();
-    appendChatBubble({ role: 'ai', text: reply });
-  }, 800 + Math.random() * 600);
+  const reply = await getAIReply(text);
+  const typing = document.getElementById(typingId);
+  if (typing) typing.remove();
+  State.chatMessages.push({ role: 'ai', text: reply });
+  State.save();
+  appendChatBubble({ role: 'ai', text: reply });
+  if (input) input.disabled = false;
 }
 
 function sendQuickMsg(text) {
@@ -1640,14 +1828,27 @@ function appendChatBubble(m) {
   scrollChatToBottom();
 }
 
-function getAIReply(text) {
+async function getAIReply(text) {
+  // Try OpenAI first
+  if (getApiKey()) {
+    const systemPrompt = `당신은 StudyAI 챗봇입니다. 사용자의 학습 자료를 기반으로 한국어로 간결하고 도움이 되는 답변을 제공하세요.\n\n현재 업로드된 학습 자료:\n${buildMaterialsContext()}\n\n시험 관련 질문에는 출제 확률이 높은 내용을 우선적으로 안내하고, 공부 계획 질문에는 구체적인 시간표를 제공하세요. 답변은 500자 이내로 핵심만 전달하세요.`;
+    const messages = [
+      { role: 'system', content: systemPrompt },
+      ...State.chatMessages.slice(-6).map(m => ({ role: m.role === 'ai' ? 'assistant' : 'user', content: m.text })),
+      { role: 'user', content: text },
+    ];
+    const res = await callOpenAI(messages, 600);
+    if (res) return res;
+  }
+
+  // Fallback mock
   const t = text.toLowerCase();
   if (t.includes('시험') || t.includes('출제') || t.includes('중요')) return MOCK_CHAT['시험'];
   if (t.includes('요약') || t.includes('정리') || t.includes('핵심')) return MOCK_CHAT['요약'];
   if (t.includes('교수') || t.includes('강조') || t.includes('스타일')) return MOCK_CHAT['교수'];
   if (t.includes('오늘') || t.includes('플랜') || t.includes('공부')) return MOCK_CHAT['오늘'];
-  if (t.includes('안녕') || t.includes('hello')) return '안녕하세요! 공부 자료에 대해 무엇이든 질문해보세요 😊\n업로드된 자료를 분석해서 최대한 도움드릴게요!';
-  return `"${text}"에 대해 분석해봤어요.\n\n현재 업로드된 ${State.materials.filter(m=>m.status==='complete').length}개 자료를 기반으로:\n\n• 가장 관련성 높은 자료: ${State.materials.find(m=>m.status==='complete')?.name || '없음'}\n• 핵심 키워드: ${State.materials.find(m=>m.analysis)?.analysis?.keywords?.slice(0,3).join(', ') || '없음'}\n\n더 구체적으로 질문해주시면 더 정확하게 도움드릴 수 있어요!`;
+  if (t.includes('안녕') || t.includes('hello')) return '안녕하세요! 공부 자료에 대해 무엇이든 질문해보세요 😊\n업로드된 자료를 분석해서 최대한 도움드릴게요!\n\n💡 설정에서 OpenAI API 키를 입력하면 더 정확한 AI 응답을 받을 수 있어요.';
+  return `"${text}"에 대해 분석해봤어요.\n\n현재 업로드된 ${State.materials.filter(m=>m.status==='complete').length}개 자료를 기반으로:\n\n• 가장 관련성 높은 자료: ${State.materials.find(m=>m.status==='complete')?.name || '없음'}\n• 핵심 키워드: ${State.materials.find(m=>m.analysis)?.analysis?.keywords?.slice(0,3).join(', ') || '없음'}\n\n💡 더 정확한 답변을 원하시면 설정(⚙️)에서 OpenAI API 키를 입력해보세요!`;
 }
 
 function clearChat() {
@@ -1655,6 +1856,544 @@ function clearChat() {
   State.save();
   const msgs = document.getElementById('chat-messages');
   if (msgs) msgs.innerHTML = DEFAULT_CHAT.map(m => renderChatBubble(m)).join('');
+}
+
+// ────────────────────────────────────────────
+// OPENAI API
+// ────────────────────────────────────────────
+function getApiKey() { return localStorage.getItem('sa_apikey') || ''; }
+
+async function callOpenAI(messages, maxTokens = 600) {
+  const key = getApiKey();
+  if (!key) return null;
+  try {
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+      body: JSON.stringify({ model: 'gpt-4o-mini', messages, max_tokens: maxTokens, temperature: 0.7 }),
+    });
+    if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || res.statusText); }
+    const data = await res.json();
+    return data.choices[0].message.content;
+  } catch (e) {
+    console.warn('OpenAI API error:', e.message);
+    return null;
+  }
+}
+
+function buildMaterialsContext() {
+  const mats = State.materials.filter(m => m.status === 'complete');
+  if (mats.length === 0) return '업로드된 자료 없음';
+  return mats.map(m => `[${m.subject}] ${m.name}: ${m.analysis?.summary || ''} (키워드: ${m.analysis?.keywords?.join(', ') || ''})`).join('\n');
+}
+
+// ────────────────────────────────────────────
+// SETTINGS
+// ────────────────────────────────────────────
+function showSettings() {
+  const modal = document.getElementById('settings-modal');
+  if (!modal) return;
+  const key = getApiKey();
+  const input = document.getElementById('api-key-input');
+  if (input && key) input.value = key;
+  updateApiDot();
+  modal.style.display = 'flex';
+}
+function closeSettings() {
+  const modal = document.getElementById('settings-modal');
+  if (modal) modal.style.display = 'none';
+}
+function saveApiKey() {
+  const input = document.getElementById('api-key-input');
+  if (!input) return;
+  const key = input.value.trim();
+  if (!key) { alert('API 키를 입력해주세요.'); return; }
+  localStorage.setItem('sa_apikey', key);
+  updateApiDot();
+  const msg = document.getElementById('api-status-msg');
+  if (msg) { msg.textContent = '✓ 저장되었습니다.'; msg.style.color = '#16a34a'; }
+}
+function clearApiKey() {
+  localStorage.removeItem('sa_apikey');
+  const input = document.getElementById('api-key-input');
+  if (input) input.value = '';
+  updateApiDot();
+  const msg = document.getElementById('api-status-msg');
+  if (msg) { msg.textContent = 'API 키가 삭제되었습니다.'; msg.style.color = 'var(--text2)'; }
+}
+async function testApiKey() {
+  const msg = document.getElementById('api-status-msg');
+  if (msg) { msg.textContent = '연결 테스트 중...'; msg.style.color = 'var(--text2)'; }
+  const reply = await callOpenAI([{ role: 'user', content: '안녕하세요! 한 문장으로 응답해주세요.' }], 50);
+  if (reply) {
+    if (msg) { msg.textContent = '✓ 연결 성공: ' + reply; msg.style.color = '#16a34a'; }
+  } else {
+    if (msg) { msg.textContent = '✗ 연결 실패 — API 키를 확인해주세요.'; msg.style.color = '#ef4444'; }
+  }
+}
+function updateApiDot() {
+  const dot = document.getElementById('api-status-dot');
+  if (!dot) return;
+  const hasKey = !!getApiKey();
+  dot.className = 'api-dot ' + (hasKey ? 'on' : 'off');
+}
+function resetAllData() {
+  if (!confirm('정말 모든 데이터를 초기화할까요? 되돌릴 수 없어요.')) return;
+  localStorage.removeItem('sa_data');
+  location.reload();
+}
+
+// ────────────────────────────────────────────
+// REVIEW SCHEDULER (Ebbinghaus)
+// ────────────────────────────────────────────
+function markReviewed(matId) {
+  const today = new Date().toISOString().split('T')[0];
+  const r = State.reviews[matId] || { count: 0, lastDate: null, nextDate: null };
+  r.count = (r.count || 0) + 1;
+  r.lastDate = today;
+  const interval = REVIEW_INTERVALS[Math.min(r.count - 1, REVIEW_INTERVALS.length - 1)];
+  const next = new Date();
+  next.setDate(next.getDate() + interval);
+  r.nextDate = next.toISOString().split('T')[0];
+  State.reviews[matId] = r;
+  State.save();
+  updateReviewBadge();
+}
+
+function getDueReviews() {
+  const today = new Date().toISOString().split('T')[0];
+  return State.materials.filter(m => {
+    if (m.status !== 'complete') return false;
+    const r = State.reviews[m.id];
+    if (!r) return false;
+    return r.nextDate && r.nextDate <= today;
+  });
+}
+
+function getNewReviewCandidates() {
+  return State.materials.filter(m => m.status === 'complete' && !State.reviews[m.id]);
+}
+
+function updateReviewBadge() {
+  const due = getDueReviews();
+  const badge = document.getElementById('review-count');
+  if (!badge) return;
+  if (due.length > 0) {
+    badge.textContent = due.length;
+    badge.style.display = '';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function renderReview(el) {
+  const today = new Date().toISOString().split('T')[0];
+  const due = getDueReviews();
+  const newCandidates = getNewReviewCandidates();
+  const all = State.materials.filter(m => m.status === 'complete' && State.reviews[m.id]);
+
+  el.innerHTML = `
+    <div style="max-width:720px;margin:0 auto;">
+      <div style="margin-bottom:24px;">
+        <h2 style="font-size:22px;font-weight:700;margin-bottom:4px;">🔄 복습 스케줄</h2>
+        <p style="color:var(--text2);font-size:14px;">에빙하우스 망각곡선 기반 — 1·3·7·14·30일 주기 복습</p>
+      </div>
+
+      <!-- Stats -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px;" class="grid-3">
+        <div class="stat-card" style="text-align:center;">
+          <div style="font-size:28px;font-weight:900;color:#ef4444;">${due.length}</div>
+          <div style="font-size:13px;color:var(--text2);">오늘 복습 필요</div>
+        </div>
+        <div class="stat-card" style="text-align:center;">
+          <div style="font-size:28px;font-weight:900;color:#f59e0b;">${newCandidates.length}</div>
+          <div style="font-size:13px;color:var(--text2);">아직 복습 시작 안 함</div>
+        </div>
+        <div class="stat-card" style="text-align:center;">
+          <div style="font-size:28px;font-weight:900;color:#16a34a;">${all.filter(m=>State.reviews[m.id]?.count>=3).length}</div>
+          <div style="font-size:13px;color:var(--text2);">3회 이상 복습 완료</div>
+        </div>
+      </div>
+
+      ${due.length > 0 ? `
+      <div style="font-size:15px;font-weight:700;margin-bottom:12px;color:#ef4444;">🔴 지금 복습할 자료</div>
+      ${due.map(m => {
+        const r = State.reviews[m.id];
+        const sub = SUBJECTS_META[m.subject] || SUBJECTS_META['기타'];
+        const overdue = r.nextDate < today;
+        return `
+        <div class="review-item ${overdue ? 'review-overdue' : 'review-due'}">
+          <span style="font-size:24px;">${getFileIcon(m.type)}</span>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${m.name}</div>
+            <div style="font-size:12px;color:var(--text2);margin-top:2px;">
+              <span style="padding:2px 8px;border-radius:99px;${subjectStyle(m.subject)};font-size:11px;">${sub.emoji} ${m.subject}</span>
+              · 복습 ${r.count}회 완료 · ${overdue ? '기한 초과' : '오늘 예정'}
+            </div>
+          </div>
+          <div style="display:flex;gap:6px;flex-shrink:0;">
+            <button class="btn btn-secondary btn-sm" onclick="showMaterialDetail('${m.id}')">보기</button>
+            <button class="btn btn-primary btn-sm" onclick="markReviewed('${m.id}');renderView();">✓ 완료</button>
+          </div>
+        </div>`;
+      }).join('')}` : `
+      <div style="text-align:center;padding:32px;background:var(--surface);border-radius:16px;border:1px solid var(--border);margin-bottom:20px;">
+        <div style="font-size:40px;margin-bottom:10px;">✅</div>
+        <div style="font-size:15px;font-weight:600;margin-bottom:4px;">오늘 복습할 자료가 없어요!</div>
+        <div style="font-size:14px;color:var(--text2);">아래 자료를 공부하고 복습 시작하기를 눌러보세요.</div>
+      </div>`}
+
+      ${newCandidates.length > 0 ? `
+      <div style="font-size:15px;font-weight:700;margin:20px 0 12px;color:var(--text2);">새로 복습 시작하기</div>
+      ${newCandidates.map(m => {
+        const sub = SUBJECTS_META[m.subject] || SUBJECTS_META['기타'];
+        return `
+        <div class="review-item">
+          <span style="font-size:24px;">${getFileIcon(m.type)}</span>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${m.name}</div>
+            <div style="font-size:12px;color:var(--text2);margin-top:2px;">
+              <span style="padding:2px 8px;border-radius:99px;${subjectStyle(m.subject)};font-size:11px;">${sub.emoji} ${m.subject}</span>
+              · 복습 시작 안 함
+            </div>
+          </div>
+          <div style="display:flex;gap:6px;flex-shrink:0;">
+            <button class="btn btn-secondary btn-sm" onclick="showMaterialDetail('${m.id}')">보기</button>
+            <button class="btn btn-primary btn-sm" onclick="markReviewed('${m.id}');renderView();">복습 시작</button>
+          </div>
+        </div>`;
+      }).join('')}` : ''}
+
+      ${all.length > 0 ? `
+      <div style="font-size:15px;font-weight:700;margin:24px 0 12px;">전체 복습 현황</div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;">
+        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+          <thead>
+            <tr style="background:var(--surface2);">
+              <th style="text-align:left;padding:10px 16px;font-weight:600;color:var(--text2);">자료</th>
+              <th style="text-align:center;padding:10px 16px;font-weight:600;color:var(--text2);">복습 횟수</th>
+              <th style="text-align:center;padding:10px 16px;font-weight:600;color:var(--text2);">마지막 복습</th>
+              <th style="text-align:center;padding:10px 16px;font-weight:600;color:var(--text2);">다음 복습</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${all.map((m,i) => {
+              const r = State.reviews[m.id];
+              const isOverdue = r.nextDate < today;
+              const isDue = r.nextDate === today;
+              return `
+              <tr style="${i>0?'border-top:1px solid var(--border)':''}">
+                <td style="padding:10px 16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px;">${m.name}</td>
+                <td style="text-align:center;padding:10px 16px;">
+                  <span style="background:var(--primary-light);color:var(--primary);padding:2px 10px;border-radius:99px;font-weight:600;">${r.count}회</span>
+                </td>
+                <td style="text-align:center;padding:10px 16px;color:var(--text2);">${r.lastDate}</td>
+                <td style="text-align:center;padding:10px 16px;">
+                  <span style="color:${isOverdue?'#ef4444':isDue?'#f59e0b':'var(--text2)'};">${r.nextDate}</span>
+                </td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>` : ''}
+    </div>
+  `;
+}
+
+// ────────────────────────────────────────────
+// NOTES
+// ────────────────────────────────────────────
+function saveNote(matId) {
+  const el = document.getElementById('note-' + matId);
+  if (!el) return;
+  State.notes[matId] = el.value;
+  State.save();
+  // Flash save indicator
+  const btn = el.closest('.card')?.querySelector('button');
+  if (btn) { const orig = btn.textContent; btn.textContent = '✓ 저장됨'; btn.style.color='#16a34a'; setTimeout(()=>{btn.textContent=orig;btn.style.color='';},1500); }
+}
+
+function renderNotes(el) {
+  const mats = State.materials.filter(m => m.status === 'complete');
+  const withNotes = mats.filter(m => State.notes[m.id] && State.notes[m.id].trim());
+
+  el.innerHTML = `
+    <div style="max-width:760px;margin:0 auto;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+        <div>
+          <h2 style="font-size:22px;font-weight:700;margin-bottom:4px;">📓 내 노트</h2>
+          <p style="color:var(--text2);font-size:14px;">자료별 메모와 핵심 정리 — ${withNotes.length}개 작성됨</p>
+        </div>
+      </div>
+
+      ${mats.length === 0 ? `
+        <div style="text-align:center;padding:60px 0;color:var(--text2);">
+          <div style="font-size:40px;margin-bottom:12px;">📂</div>
+          자료를 업로드하면 노트를 작성할 수 있어요.
+        </div>` : mats.map(m => {
+        const sub = SUBJECTS_META[m.subject] || SUBJECTS_META['기타'];
+        const note = State.notes[m.id] || '';
+        return `
+        <div class="card" style="padding:20px;margin-bottom:16px;">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+            <span style="font-size:24px;">${getFileIcon(m.type)}</span>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${m.name}</div>
+              <span style="font-size:11px;padding:2px 8px;border-radius:99px;${subjectStyle(m.subject)}">${sub.emoji} ${m.subject}</span>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="saveNote('${m.id}')">저장</button>
+          </div>
+          <textarea class="note-editor" id="note-${m.id}" placeholder="핵심 내용, 이해한 것, 외울 것을 자유롭게...">${note}</textarea>
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+
+  // Attach save shortcuts for all notes
+  setTimeout(() => {
+    mats.forEach(m => {
+      const noteEl = document.getElementById('note-' + m.id);
+      if (noteEl) noteEl.addEventListener('keydown', e => {
+        if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); saveNote(m.id); }
+      });
+    });
+  }, 0);
+}
+
+// ────────────────────────────────────────────
+// QUIZ
+// ────────────────────────────────────────────
+const MOCK_QUIZ_DB = {
+  '경영학': [
+    { q: 'BCG 매트릭스에서 시장 성장률은 높지만 시장점유율이 낮은 사업은?', options: ['문제아(Question Mark)', '스타(Star)', '현금젖소(Cash Cow)', '개(Dog)'], answer: 0 },
+    { q: 'SWOT 분석에서 W(Weakness)는 무엇을 의미하나요?', options: ['내부 약점', '외부 위협', '내부 강점', '외부 기회'], answer: 0 },
+    { q: '포터의 5가지 경쟁요인에 포함되지 않는 것은?', options: ['정부 규제', '공급자 교섭력', '구매자 교섭력', '신규 진입자 위협'], answer: 0 },
+    { q: '블루오션 전략의 핵심 목표는?', options: ['경쟁 없는 새 시장 창출', '기존 시장에서 점유율 확대', '원가 절감', '제품 차별화'], answer: 0 },
+    { q: '핵심역량(Core Competence)의 조건이 아닌 것은?', options: ['단기간 모방 가능', '고객 가치 창출', '경쟁사 대비 우월', '다양한 시장 적용'], answer: 0 },
+  ],
+  '통계학': [
+    { q: 'p-value가 0.05보다 작을 때 귀무가설을?', options: ['기각한다', '채택한다', '보류한다', '수정한다'], answer: 0 },
+    { q: '중심극한정리에 따르면 표본 크기가 충분히 클 때 표본 평균의 분포는?', options: ['정규분포', '이항분포', '포아송분포', '균일분포'], answer: 0 },
+    { q: '독립표본 t-test를 사용하는 상황은?', options: ['두 독립 집단 평균 비교', '세 집단 이상 비교', '변수 간 관계 분석', '빈도 차이 검정'], answer: 0 },
+    { q: 'R²(결정계수)가 0.85라는 의미는?', options: ['85%의 변동을 모델이 설명', 'p-value가 0.85', '오차가 85%', '상관계수가 0.85'], answer: 0 },
+    { q: 'ANOVA는 몇 개 이상 집단 비교에 사용하나요?', options: ['3개 이상', '2개 이상', '1개', '5개 이상'], answer: 0 },
+  ],
+  '경제학': [
+    { q: '수요의 가격탄력성이 1보다 클 때?', options: ['탄력적 수요', '비탄력적 수요', '단위탄력적', '완전탄력적'], answer: 0 },
+    { q: '내쉬균형이란?', options: ['상대방 전략 고정 시 최적 전략', '파레토 최적 전략', '지배전략 균형', '모든 참가자 이익 최대화'], answer: 0 },
+    { q: '비교우위의 기준은?', options: ['기회비용', '절대생산량', '노동생산성', '자본집약도'], answer: 0 },
+    { q: '독점 기업의 가격 결정 원칙은?', options: ['MR=MC', 'P=MC', 'TR 최대화', 'ATC 최소화'], answer: 0 },
+    { q: '소비자잉여란?', options: ['지불의사와 실제가격의 차이', '생산자 이익', '사회적 잉여 전체', '세금 부담'], answer: 0 },
+  ],
+  '회계학': [
+    { q: '재무제표 3가지에 해당하지 않는 것은?', options: ['손익계산서', '재무상태표', '현금흐름표', '생산계획서'], answer: 3 },
+    { q: '정액법 감가상각에서 매년 감가상각비는?', options: ['동일', '점점 감소', '점점 증가', '불규칙'], answer: 0 },
+    { q: 'FIFO(선입선출법)에서 재고 평가 시?', options: ['먼저 구매한 것 먼저 출고', '나중에 구매한 것 먼저 출고', '평균값 사용', '임의 선택'], answer: 0 },
+    { q: '자산=부채+자본 등식이 나타내는 표는?', options: ['재무상태표', '손익계산서', '현금흐름표', '자본변동표'], answer: 0 },
+    { q: '당기순이익이 발생하면 자본에 어떻게 영향?', options: ['증가', '감소', '변화 없음', '부채 증가'], answer: 0 },
+  ],
+  '프로그래밍': [
+    { q: 'Python에서 리스트의 마지막 요소 접근 방법은?', options: ['list[-1]', 'list[last]', 'list.last()', 'list.end()'], answer: 0 },
+    { q: 'OOP의 4대 원칙에 포함되지 않는 것은?', options: ['컴파일', '캡슐화', '상속', '다형성'], answer: 0 },
+    { q: '시간복잡도 O(n²)의 예시 알고리즘은?', options: ['버블 정렬', '이진 탐색', '합병 정렬', '퀵 정렬(평균)'], answer: 0 },
+    { q: 'def 키워드는 Python에서 무엇을 정의?', options: ['함수', '클래스', '변수', '모듈'], answer: 0 },
+    { q: 'try-except 구문의 목적은?', options: ['예외 처리', '반복 실행', '조건 분기', '함수 호출'], answer: 0 },
+  ],
+  '데이터 분석': [
+    { q: 'Pandas에서 groupby() 함수의 용도는?', options: ['그룹별 집계', '데이터 정렬', '결측치 처리', '데이터 시각화'], answer: 0 },
+    { q: '과적합(overfitting)을 방지하는 방법이 아닌 것은?', options: ['학습 데이터 무한 증가', '드롭아웃', '규제(Regularization)', '교차검증'], answer: 0 },
+    { q: 'KNN 알고리즘에서 K의 역할은?', options: ['참조할 이웃 수', '학습률', '반복 횟수', '클래스 수'], answer: 0 },
+    { q: 'DataFrame.merge()는 어떤 SQL 연산과 유사?', options: ['JOIN', 'GROUP BY', 'WHERE', 'ORDER BY'], answer: 0 },
+    { q: 'Matplotlib의 scatter()는?', options: ['산점도 그리기', '막대 그래프', '히트맵', '선 그래프'], answer: 0 },
+  ],
+  '기타': [
+    { q: '효과적인 학습법으로 알려진 포모도로 기법의 기본 단위는?', options: ['25분 집중 + 5분 휴식', '50분 집중 + 10분 휴식', '60분 집중 + 15분 휴식', '45분 집중 + 5분 휴식'], answer: 0 },
+    { q: '에빙하우스 망각곡선에 따르면 학습 후 1일 후 기억량은?', options: ['약 33%', '약 80%', '약 10%', '약 60%'], answer: 0 },
+    { q: '액티브 리콜(Active Recall) 학습법이란?', options: ['기억을 적극적으로 인출하는 연습', '반복해서 읽기', '하이라이트 표시', '요약 노트 작성'], answer: 0 },
+    { q: '간격 반복(Spaced Repetition) 학습의 핵심 원리는?', options: ['점점 늘어나는 간격으로 복습', '매일 같은 시간에 복습', '한 번에 몰아서 공부', '주 1회 복습'], answer: 0 },
+    { q: '코넬 노트 필기법에서 "단서 열"의 역할은?', options: ['핵심 질문/키워드 기록', '상세 내용 기록', '요약 작성', '날짜 기록'], answer: 0 },
+  ],
+};
+
+function getMockQuestions(mat) {
+  const pool = MOCK_QUIZ_DB[mat.subject] || MOCK_QUIZ_DB['기타'];
+  // Shuffle and pick 5
+  return [...pool].sort(() => Math.random() - 0.5).slice(0, 5);
+}
+
+async function generateQuizWithAI(mat) {
+  const context = `자료명: ${mat.name}\n과목: ${mat.subject}\n요약: ${mat.analysis?.summary}\n키워드: ${mat.analysis?.keywords?.join(', ')}`;
+  const prompt = `다음 학습 자료를 기반으로 객관식 퀴즈 5문제를 만들어주세요.\n\n${context}\n\n형식 (JSON 배열로만 응답, 다른 텍스트 없이):\n[{"q":"문제","options":["선택지1","선택지2","선택지3","선택지4"],"answer":정답인덱스(0-3),"explain":"간단한 해설"}]`;
+  try {
+    const res = await callOpenAI([{ role: 'user', content: prompt }], 1000);
+    if (!res) return null;
+    const json = res.match(/\[[\s\S]*\]/)?.[0];
+    if (!json) return null;
+    return JSON.parse(json);
+  } catch { return null; }
+}
+
+function startQuiz(matId) {
+  State.quizState = { matId, questions: null, answers: [], current: 0, score: 0, loading: true };
+  navigate('quiz', null);
+}
+
+async function renderQuiz(el) {
+  const mats = State.materials.filter(m => m.status === 'complete');
+
+  if (!State.quizState) {
+    // Quiz selection screen
+    el.innerHTML = `
+      <div style="max-width:720px;margin:0 auto;">
+        <div style="margin-bottom:24px;">
+          <h2 style="font-size:22px;font-weight:700;margin-bottom:4px;">📝 퀴즈</h2>
+          <p style="color:var(--text2);font-size:14px;">자료를 선택해서 퀴즈를 풀어보세요${getApiKey() ? ' — GPT가 실제 문제를 생성합니다' : ' — 과목별 예제 문제 제공'}</p>
+        </div>
+        ${mats.length === 0 ? `
+          <div style="text-align:center;padding:60px 0;color:var(--text2);">
+            <div style="font-size:40px;margin-bottom:12px;">📂</div>
+            자료를 먼저 업로드해주세요.
+          </div>` : `
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;">
+          ${mats.map(m => {
+            const sub = SUBJECTS_META[m.subject] || SUBJECTS_META['기타'];
+            return `
+            <div class="card" style="padding:18px;cursor:pointer;transition:all .2s;" onclick="startQuiz('${m.id}')">
+              <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+                <span style="font-size:28px;">${getFileIcon(m.type)}</span>
+                <div>
+                  <span style="font-size:11px;padding:2px 8px;border-radius:99px;${subjectStyle(m.subject)}">${sub.emoji} ${m.subject}</span>
+                </div>
+              </div>
+              <div style="font-size:14px;font-weight:600;margin-bottom:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${m.name}</div>
+              <div style="font-size:13px;color:var(--text2);margin-bottom:12px;">5문제 · ${getApiKey() ? 'AI 생성' : '예제 문제'}</div>
+              <button class="btn btn-primary btn-sm" style="width:100%;">퀴즈 시작 →</button>
+            </div>`;
+          }).join('')}
+        </div>`}
+      </div>
+    `;
+    return;
+  }
+
+  const qs = State.quizState;
+
+  // Loading screen
+  if (qs.loading) {
+    el.innerHTML = `
+      <div style="max-width:600px;margin:0 auto;text-align:center;padding:80px 20px;">
+        <div style="font-size:48px;margin-bottom:20px;animation:pulse-ring 1s infinite;">📝</div>
+        <div style="font-size:18px;font-weight:700;margin-bottom:8px;">${getApiKey() ? 'AI가 문제를 생성하고 있어요' : '퀴즈를 준비하고 있어요'}</div>
+        <div style="font-size:14px;color:var(--text2);">잠시만 기다려주세요...</div>
+      </div>
+    `;
+    // Generate questions
+    const mat = State.materials.find(m => m.id === qs.matId);
+    let questions = null;
+    if (getApiKey() && mat?.analysis) {
+      questions = await generateQuizWithAI(mat);
+    }
+    if (!questions && mat) questions = getMockQuestions(mat);
+    qs.questions = questions || [];
+    qs.loading = false;
+    qs.answers = new Array(qs.questions.length).fill(null);
+    qs.current = 0;
+    qs.score = 0;
+    renderView();
+    return;
+  }
+
+  // Results screen
+  if (qs.current >= qs.questions.length && qs.questions.length > 0) {
+    const pct = Math.round((qs.score / qs.questions.length) * 100);
+    const grade = pct >= 80 ? '🎉 훌륭해요!' : pct >= 60 ? '👍 잘했어요!' : '📚 더 공부하세요';
+    el.innerHTML = `
+      <div style="max-width:600px;margin:0 auto;text-align:center;padding:40px 20px;">
+        <div style="font-size:56px;margin-bottom:16px;">${pct>=80?'🏆':pct>=60?'🎯':'📖'}</div>
+        <div style="font-size:24px;font-weight:900;margin-bottom:8px;">${pct}점</div>
+        <div style="font-size:16px;font-weight:600;margin-bottom:4px;">${grade}</div>
+        <div style="font-size:14px;color:var(--text2);margin-bottom:32px;">${qs.questions.length}문제 중 ${qs.score}개 정답</div>
+
+        <div class="card" style="padding:20px;margin-bottom:24px;text-align:left;">
+          <div style="font-size:14px;font-weight:700;margin-bottom:14px;">정답 확인</div>
+          ${qs.questions.map((q, i) => {
+            const correct = qs.answers[i] === q.answer;
+            return `
+            <div style="padding:12px 0;border-bottom:1px solid var(--border);">
+              <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:6px;">
+                <span style="color:${correct?'#16a34a':'#ef4444'};font-size:16px;flex-shrink:0;">${correct?'✓':'✗'}</span>
+                <div style="font-size:13px;font-weight:600;">${i+1}. ${q.q}</div>
+              </div>
+              ${!correct ? `<div style="font-size:12px;color:var(--text2);margin-left:26px;">정답: ${q.options[q.answer]}</div>` : ''}
+              ${q.explain ? `<div style="font-size:12px;color:var(--primary);margin-left:26px;margin-top:4px;">💡 ${q.explain}</div>` : ''}
+            </div>`;
+          }).join('')}
+        </div>
+
+        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+          <button class="btn btn-primary" onclick="startQuiz('${qs.matId}')">다시 풀기</button>
+          <button class="btn btn-secondary" onclick="State.quizState=null;navigate('quiz',null);">다른 자료 선택</button>
+          <button class="btn btn-secondary" onclick="markReviewed('${qs.matId}');alert('복습 완료!')">🔄 복습 완료 처리</button>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  // Question screen
+  const q = qs.questions[qs.current];
+  const mat = State.materials.find(m => m.id === qs.matId);
+  el.innerHTML = `
+    <div style="max-width:600px;margin:0 auto;">
+      <!-- Header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+        <button class="btn btn-secondary btn-sm" onclick="State.quizState=null;navigate('quiz',null);">← 나가기</button>
+        <div style="font-size:14px;color:var(--text2);">${mat?.name || ''}</div>
+        <div style="font-size:14px;font-weight:600;">${qs.current+1} / ${qs.questions.length}</div>
+      </div>
+
+      <!-- Progress -->
+      <div class="progress-bar" style="margin-bottom:24px;height:6px;">
+        <div class="progress-fill" style="width:${((qs.current)/qs.questions.length*100).toFixed(0)}%"></div>
+      </div>
+
+      <!-- Question -->
+      <div class="card" style="padding:24px;margin-bottom:20px;">
+        <div style="font-size:13px;font-weight:600;color:var(--primary);margin-bottom:10px;">Q${qs.current+1}</div>
+        <div style="font-size:16px;font-weight:600;line-height:1.6;">${q.q}</div>
+      </div>
+
+      <!-- Options -->
+      <div id="quiz-options">
+        ${q.options.map((opt, i) => `
+          <button class="quiz-option" onclick="answerQuiz(${i})">${String.fromCharCode(65+i)}. ${opt}</button>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function answerQuiz(idx) {
+  const qs = State.quizState;
+  if (!qs) return;
+  const q = qs.questions[qs.current];
+  qs.answers[qs.current] = idx;
+  const isCorrect = idx === q.answer;
+  if (isCorrect) qs.score++;
+
+  // Show result visually
+  const btns = document.querySelectorAll('.quiz-option');
+  btns.forEach((btn, i) => {
+    btn.disabled = true;
+    if (i === q.answer) btn.classList.add('correct');
+    else if (i === idx && !isCorrect) btn.classList.add('wrong');
+  });
+
+  // Auto advance after 1.2s
+  setTimeout(() => {
+    qs.current++;
+    renderView();
+  }, 1200);
 }
 
 // ────────────────────────────────────────────
@@ -1727,6 +2466,8 @@ function init() {
 
   // Render
   updateSidebar();
+  updateReviewBadge();
+  updateApiDot();
   renderView();
 
   // Drag & drop on whole window
